@@ -94,12 +94,28 @@ body {
 }
 
 /* Main Layout */
+/* Main Content - Flexbox Layout */
 .main-content {
     display: flex;
     gap: 0;
     align-items: stretch;
     position: relative;
     width: 100%;
+}
+
+/* Chat section contains both chat panel and metrics */
+.chat-section {
+    display: flex;
+    flex-direction: column;
+}
+
+.chat-section .panel {
+    flex: 1;
+    margin-bottom: 0;
+}
+
+.chat-metrics-below {
+    flex-shrink: 0;
 }
 
 /* Resizable panels */
@@ -308,6 +324,75 @@ body {
     cursor: pointer;
 }
 
+/* CPU/GPU Mode Toggle */
+.mode-toggle-group {
+    margin-bottom: 25px;
+    padding: 15px;
+    background: var(--bg-primary);
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+}
+
+.mode-toggle-buttons {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-top: 10px;
+    margin-bottom: 8px;
+}
+
+.mode-button {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 12px 20px;
+    background: var(--bg-tertiary);
+    border: 2px solid var(--border-color);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s;
+    font-weight: 600;
+    font-size: 0.95rem;
+}
+
+.mode-button input[type="radio"] {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+}
+
+.mode-button:hover {
+    border-color: var(--primary-color);
+    background: var(--bg-secondary);
+    transform: translateY(-2px);
+}
+
+.mode-button.active {
+    background: linear-gradient(135deg, var(--primary-color), var(--primary-hover));
+    border-color: var(--primary-color);
+    color: white;
+    box-shadow: 0 4px 12px rgba(79, 70, 229, 0.4);
+}
+
+.mode-button span {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+#cpu-settings, #gpu-settings {
+    transition: opacity 0.3s, max-height 0.3s;
+}
+
+#cpu-settings.hidden, #gpu-settings.hidden {
+    display: none;
+    opacity: 0;
+    max-height: 0;
+    overflow: hidden;
+}
+
+
 /* Command Preview Section */
 .command-preview-section {
     margin-top: 25px;
@@ -332,24 +417,31 @@ body {
     margin: 0;
 }
 
-.command-preview {
+.command-preview-textarea {
+    width: 100%;
     background: var(--bg-tertiary);
     border-radius: 6px;
     padding: 12px;
     margin-bottom: 8px;
     border: 1px solid rgba(79, 70, 229, 0.3);
-    max-height: 200px;
-    overflow-y: auto;
     font-family: 'Monaco', 'Courier New', monospace;
     font-size: 0.85rem;
     line-height: 1.6;
+    color: var(--text-primary);
+    resize: vertical;
+    min-height: 120px;
+    transition: all 0.2s;
 }
 
-.command-preview code {
-    color: var(--text-primary);
-    word-wrap: break-word;
-    white-space: pre-wrap;
-    display: block;
+.command-preview-textarea:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.15);
+    background: var(--bg-secondary);
+}
+
+.command-preview-textarea:hover {
+    border-color: rgba(79, 70, 229, 0.5);
 }
 
 .command-help {
@@ -357,23 +449,24 @@ body {
     color: var(--text-secondary);
     font-size: 0.75rem;
     font-style: italic;
+    margin-top: 4px;
 }
 
-.command-preview::-webkit-scrollbar {
+.command-preview-textarea::-webkit-scrollbar {
     width: 6px;
 }
 
-.command-preview::-webkit-scrollbar-track {
+.command-preview-textarea::-webkit-scrollbar-track {
     background: var(--bg-primary);
     border-radius: 3px;
 }
 
-.command-preview::-webkit-scrollbar-thumb {
+.command-preview-textarea::-webkit-scrollbar-thumb {
     background: var(--border-color);
     border-radius: 3px;
 }
 
-.command-preview::-webkit-scrollbar-thumb:hover {
+.command-preview-textarea::-webkit-scrollbar-thumb:hover {
     background: var(--text-secondary);
 }
 
@@ -403,6 +496,9 @@ body {
 .btn-sm {
     padding: 8px 16px;
     font-size: 0.85rem;
+    flex: 0 0 auto;
+    min-width: 80px;
+    max-width: 100px;
 }
 
 .btn-primary {
@@ -439,6 +535,29 @@ body {
 .btn:disabled {
     opacity: 0.5;
     cursor: not-allowed;
+}
+
+/* Ready state for Send button when server is ready */
+.btn-ready {
+    background: var(--success-color) !important;
+    color: white !important;
+    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
+    animation: pulse-ready 2s ease-in-out infinite;
+}
+
+.btn-ready:hover:not(:disabled) {
+    background: #059669 !important;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(16, 185, 129, 0.5);
+}
+
+@keyframes pulse-ready {
+    0%, 100% {
+        box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
+    }
+    50% {
+        box-shadow: 0 4px 20px rgba(16, 185, 129, 0.6);
+    }
 }
 
 /* Chat Section */
@@ -677,6 +796,78 @@ body {
     }
     40% {
         transform: scale(1);
+    }
+}
+
+/* Chat Performance Metrics Section - Below Chat */
+.chat-metrics-below {
+    background: var(--bg-secondary);
+    border-radius: 12px;
+    padding: 15px;
+    margin: 10px;
+    box-shadow: var(--shadow);
+}
+
+.chat-metrics-below .panel-header {
+    margin-bottom: 15px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.chat-metrics-below .panel-header h3 {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin: 0;
+}
+
+.chat-metrics-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 12px;
+}
+
+.chat-metric-item {
+    background: var(--bg-primary);
+    border-radius: 8px;
+    padding: 12px;
+    border: 1px solid var(--border-color);
+    transition: all 0.3s;
+}
+
+.chat-metric-item:hover {
+    border-color: var(--primary-color);
+    transform: translateY(-2px);
+}
+
+.chat-metric-item .metric-label {
+    display: block;
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 5px;
+    font-weight: 600;
+}
+
+.chat-metric-item .metric-value {
+    display: block;
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: var(--success-color);
+    font-family: 'Monaco', 'Courier New', monospace;
+}
+
+.chat-metric-item .metric-value.updated {
+    animation: metricPulse 0.5s ease;
+}
+
+@keyframes metricPulse {
+    0%, 100% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(1.1);
     }
 }
 

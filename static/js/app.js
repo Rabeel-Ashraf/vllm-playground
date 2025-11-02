@@ -4,6 +4,7 @@ class VLLMWebUI {
         this.ws = null;
         this.chatHistory = [];
         this.serverRunning = false;
+        this.serverReady = false;  // Track if server startup is complete
         this.autoScroll = true;
         this.benchmarkRunning = false;
         this.benchmarkPollInterval = null;
@@ -24,9 +25,26 @@ class VLLMWebUI {
             customModel: document.getElementById('custom-model'),
             host: document.getElementById('host'),
             port: document.getElementById('port'),
+            
+            // CPU/GPU Mode
+            modeCpu: document.getElementById('mode-cpu'),
+            modeGpu: document.getElementById('mode-gpu'),
+            modeCpuLabel: document.getElementById('mode-cpu-label'),
+            modeGpuLabel: document.getElementById('mode-gpu-label'),
+            modeHelpText: document.getElementById('mode-help-text'),
+            cpuSettings: document.getElementById('cpu-settings'),
+            gpuSettings: document.getElementById('gpu-settings'),
+            
+            // GPU settings
             tensorParallel: document.getElementById('tensor-parallel'),
             gpuMemory: document.getElementById('gpu-memory'),
+            
+            // CPU settings
+            cpuKvcache: document.getElementById('cpu-kvcache'),
+            cpuThreads: document.getElementById('cpu-threads'),
+            
             dtype: document.getElementById('dtype'),
+            dtypeHelpText: document.getElementById('dtype-help-text'),
             maxModelLen: document.getElementById('max-model-len'),
             trustRemoteCode: document.getElementById('trust-remote-code'),
             enablePrefixCaching: document.getElementById('enable-prefix-caching'),
@@ -81,6 +99,9 @@ class VLLMWebUI {
         // Initialize resize functionality
         this.initResize();
         
+        // Initialize compute mode (CPU is default)
+        this.toggleComputeMode();
+        
         // Update command preview initially
         this.updateCommandPreview();
         
@@ -96,6 +117,10 @@ class VLLMWebUI {
         // Server control
         this.elements.startBtn.addEventListener('click', () => this.startServer());
         this.elements.stopBtn.addEventListener('click', () => this.stopServer());
+        
+        // CPU/GPU mode toggle
+        this.elements.modeCpu.addEventListener('change', () => this.toggleComputeMode());
+        this.elements.modeGpu.addEventListener('change', () => this.toggleComputeMode());
         
         // Chat
         this.elements.sendBtn.addEventListener('click', () => this.sendMessage());
@@ -126,8 +151,12 @@ class VLLMWebUI {
             this.elements.customModel,
             this.elements.host,
             this.elements.port,
+            this.elements.modeCpu,
+            this.elements.modeGpu,
             this.elements.tensorParallel,
             this.elements.gpuMemory,
+            this.elements.cpuKvcache,
+            this.elements.cpuThreads,
             this.elements.dtype,
             this.elements.maxModelLen,
             this.elements.trustRemoteCode,
@@ -188,18 +217,26 @@ class VLLMWebUI {
                 this.updateStatus('running', 'Server Running');
                 this.elements.startBtn.disabled = true;
                 this.elements.stopBtn.disabled = false;
-                this.elements.sendBtn.disabled = false;
+                // Only enable send button if server is ready
+                this.elements.sendBtn.disabled = !this.serverReady;
                 this.elements.runBenchmarkBtn.disabled = false;
+                
+                // Update send button state only if serverReady (don't remove class unnecessarily)
+                if (this.serverReady) {
+                    this.updateSendButtonState();
+                }
                 
                 if (data.uptime) {
                     this.elements.uptime.textContent = `(${data.uptime})`;
                 }
             } else {
                 this.serverRunning = false;
+                this.serverReady = false;  // Reset ready state when server stops
                 this.updateStatus('connected', 'Server Stopped');
                 this.elements.startBtn.disabled = false;
                 this.elements.stopBtn.disabled = true;
                 this.elements.sendBtn.disabled = true;
+                this.elements.sendBtn.classList.remove('btn-ready');
                 this.elements.runBenchmarkBtn.disabled = true;
                 this.elements.uptime.textContent = '';
             }
@@ -213,30 +250,85 @@ class VLLMWebUI {
         this.elements.statusText.textContent = text;
     }
 
+    toggleComputeMode() {
+        const isCpuMode = this.elements.modeCpu.checked;
+        
+        // Update button active states
+        if (isCpuMode) {
+            this.elements.modeCpuLabel.classList.add('active');
+            this.elements.modeGpuLabel.classList.remove('active');
+            this.elements.modeHelpText.textContent = 'CPU mode is recommended for macOS';
+            this.elements.dtypeHelpText.textContent = 'BFloat16 recommended for CPU';
+            
+            // Show CPU settings, hide GPU settings
+            this.elements.cpuSettings.style.display = 'block';
+            this.elements.gpuSettings.style.display = 'none';
+            
+            // Set dtype to bfloat16 for CPU
+            this.elements.dtype.value = 'bfloat16';
+        } else {
+            this.elements.modeCpuLabel.classList.remove('active');
+            this.elements.modeGpuLabel.classList.add('active');
+            this.elements.modeHelpText.textContent = 'GPU mode for CUDA-enabled systems';
+            this.elements.dtypeHelpText.textContent = 'Auto recommended for GPU';
+            
+            // Show GPU settings, hide CPU settings
+            this.elements.cpuSettings.style.display = 'none';
+            this.elements.gpuSettings.style.display = 'block';
+            
+            // Set dtype to auto for GPU
+            this.elements.dtype.value = 'auto';
+        }
+        
+        // Update command preview
+        this.updateCommandPreview();
+    }
+
     getConfig() {
         const model = this.elements.customModel.value.trim() || this.elements.modelSelect.value;
         const maxModelLen = this.elements.maxModelLen.value;
+        const isCpuMode = this.elements.modeCpu.checked;
         
-        return {
+        const config = {
             model: model,
             host: this.elements.host.value,
             port: parseInt(this.elements.port.value),
-            tensor_parallel_size: parseInt(this.elements.tensorParallel.value),
-            gpu_memory_utilization: parseFloat(this.elements.gpuMemory.value) / 100,
-            max_model_len: maxModelLen ? parseInt(maxModelLen) : null,
             dtype: this.elements.dtype.value,
+            max_model_len: maxModelLen ? parseInt(maxModelLen) : null,
             trust_remote_code: this.elements.trustRemoteCode.checked,
             enable_prefix_caching: this.elements.enablePrefixCaching.checked,
             disable_log_stats: this.elements.disableLogStats.checked,
-            load_format: "auto"
+            use_cpu: isCpuMode
         };
+        
+        if (isCpuMode) {
+            // CPU-specific settings
+            config.cpu_kvcache_space = parseInt(this.elements.cpuKvcache.value);
+            config.cpu_omp_threads_bind = this.elements.cpuThreads.value;
+        } else {
+            // GPU-specific settings
+            config.tensor_parallel_size = parseInt(this.elements.tensorParallel.value);
+            config.gpu_memory_utilization = parseFloat(this.elements.gpuMemory.value) / 100;
+            config.load_format = "auto";
+        }
+        
+        return config;
     }
 
     async startServer() {
         const config = this.getConfig();
         
+        // Reset ready state
+        this.serverReady = false;
+        this.elements.sendBtn.classList.remove('btn-ready');
+        
         this.elements.startBtn.disabled = true;
         this.elements.startBtn.textContent = '⏳ Starting...';
+        
+        // Add immediate log feedback
+        this.addLog('🚀 Starting vLLM server...', 'info');
+        this.addLog(`Model: ${config.model}`, 'info');
+        this.addLog(`Mode: ${config.use_cpu ? 'CPU' : 'GPU'}`, 'info');
         
         try {
             const response = await fetch('/api/start', {
@@ -253,11 +345,12 @@ class VLLMWebUI {
             }
             
             const data = await response.json();
-            this.addLog(`Server started with PID: ${data.pid}`, 'success');
+            this.addLog(`✅ Server started with PID: ${data.pid}`, 'success');
+            this.addLog('⏳ Waiting for server initialization...', 'info');
             this.showNotification('Server started successfully', 'success');
             
         } catch (error) {
-            this.addLog(`Failed to start server: ${error.message}`, 'error');
+            this.addLog(`❌ Failed to start server: ${error.message}`, 'error');
             this.showNotification(`Failed to start: ${error.message}`, 'error');
             this.elements.startBtn.disabled = false;
         } finally {
@@ -269,6 +362,8 @@ class VLLMWebUI {
         this.elements.stopBtn.disabled = true;
         this.elements.stopBtn.textContent = '⏳ Stopping...';
         
+        this.addLog('⏹️ Stopping vLLM server...', 'info');
+        
         try {
             const response = await fetch('/api/stop', {
                 method: 'POST'
@@ -279,11 +374,11 @@ class VLLMWebUI {
                 throw new Error(error.detail || 'Failed to stop server');
             }
             
-            this.addLog('Server stopped', 'success');
+            this.addLog('✅ Server stopped successfully', 'success');
             this.showNotification('Server stopped', 'success');
             
         } catch (error) {
-            this.addLog(`Failed to stop server: ${error.message}`, 'error');
+            this.addLog(`❌ Failed to stop server: ${error.message}`, 'error');
             this.showNotification(`Failed to stop: ${error.message}`, 'error');
             this.elements.stopBtn.disabled = false;
         } finally {
@@ -312,9 +407,17 @@ class VLLMWebUI {
         
         // Disable send button
         this.elements.sendBtn.disabled = true;
-        this.elements.sendBtn.textContent = '⏳ Sending...';
+        this.elements.sendBtn.textContent = '⏳ Generating...';
+        
+        // Create placeholder for assistant message
+        const assistantMessageDiv = this.addChatMessage('assistant', '▌');
+        const textSpan = assistantMessageDiv.querySelector('.message-text');
+        let fullText = '';
+        let startTime = Date.now();
+        let usageData = null;
         
         try {
+            // Use streaming
             const response = await fetch('/api/chat', {
                 method: 'POST',
                 headers: {
@@ -324,38 +427,130 @@ class VLLMWebUI {
                     messages: this.chatHistory,
                     temperature: parseFloat(this.elements.temperature.value),
                     max_tokens: parseInt(this.elements.maxTokens.value),
-                    stream: false
+                    stream: true
                 })
             });
             
             if (!response.ok) {
-                const error = await response.json();
-                throw new Error(error.detail || 'Failed to send message');
+                const errorText = await response.text();
+                throw new Error(errorText || 'Failed to send message');
             }
             
-            const data = await response.json();
+            // Read the streaming response
+            const reader = response.body.getReader();
+            const decoder = new TextDecoder();
             
-            // Extract assistant response
-            let assistantMessage = '';
-            if (data.choices && data.choices.length > 0) {
-                assistantMessage = data.choices[0].message.content;
-            } else if (data.response) {
-                assistantMessage = data.response;
+            console.log('Starting to read streaming response...');
+            
+            while (true) {
+                const {done, value} = await reader.read();
+                
+                if (done) {
+                    console.log('Stream reading complete');
+                    break;
+                }
+                
+                // Decode the chunk
+                const chunk = decoder.decode(value, {stream: true});
+                const lines = chunk.split('\n');
+                
+                for (const line of lines) {
+                    if (line.startsWith('data: ')) {
+                        const data = line.substring(6).trim();
+                        
+                        if (data === '[DONE]') {
+                            console.log('Received [DONE] signal');
+                            break;
+                        }
+                        
+                        try {
+                            const parsed = JSON.parse(data);
+                            
+                            if (parsed.choices && parsed.choices.length > 0) {
+                                const delta = parsed.choices[0].delta;
+                                
+                                if (delta && delta.content) {
+                                    fullText += delta.content;
+                                    // Update the message in real-time with cursor
+                                    textSpan.textContent = `${fullText}▌`;
+                                    
+                                    // Auto-scroll to bottom
+                                    this.elements.chatContainer.scrollTop = this.elements.chatContainer.scrollHeight;
+                                }
+                            }
+                            
+                            // Capture usage data if available
+                            if (parsed.usage) {
+                                usageData = parsed.usage;
+                                console.log('Captured usage data:', usageData);
+                            }
+                        } catch (e) {
+                            // Skip invalid JSON lines
+                            console.debug('Skipped line:', line, 'Error:', e.message);
+                        }
+                    }
+                }
+            }
+            
+            console.log('Finalizing response, fullText length:', fullText.length);
+            console.log('Usage data:', usageData);
+            
+            // Remove cursor and finalize
+            if (fullText) {
+                textSpan.textContent = fullText;
+                this.chatHistory.push({role: 'assistant', content: fullText});
             } else {
-                assistantMessage = 'No response from model';
+                textSpan.textContent = 'No response from model';
+                assistantMessageDiv.classList.add('error');
             }
             
-            // Add assistant message to chat
-            this.addChatMessage('assistant', assistantMessage);
-            this.chatHistory.push({role: 'assistant', content: assistantMessage});
+            // Calculate and display metrics
+            const endTime = Date.now();
+            const timeTaken = (endTime - startTime) / 1000; // in seconds
+            
+            // Estimate prompt tokens if not provided (rough estimate: ~4 chars per token)
+            const estimatedPromptTokens = usageData?.prompt_tokens || Math.ceil(
+                this.chatHistory
+                    .filter(msg => msg.role === 'user')
+                    .map(msg => msg.content.length)
+                    .reduce((a, b) => a + b, 0) / 4
+            );
+            
+            const completionTokens = usageData?.completion_tokens || fullText.split(/\s+/).length;
+            const totalTokens = usageData?.total_tokens || (estimatedPromptTokens + completionTokens);
+            
+            console.log('Metrics:', {
+                promptTokens: estimatedPromptTokens,
+                completionTokens: completionTokens,
+                totalTokens: totalTokens,
+                timeTaken: timeTaken
+            });
+            
+            this.updateChatMetrics({
+                promptTokens: estimatedPromptTokens,
+                completionTokens: completionTokens,
+                totalTokens: totalTokens,
+                timeTaken: timeTaken
+            });
             
         } catch (error) {
-            this.addLog(`Chat error: ${error.message}`, 'error');
+            console.error('Chat error details:', error);
+            this.addLog(`❌ Chat error: ${error.message}`, 'error');
             this.showNotification(`Error: ${error.message}`, 'error');
+            
+            // Remove the placeholder message
+            if (assistantMessageDiv && assistantMessageDiv.parentNode) {
+                assistantMessageDiv.remove();
+            }
+            
             this.addChatMessage('system', `Error: ${error.message}`);
         } finally {
+            console.log('Finally block executed - resetting button');
             this.elements.sendBtn.disabled = false;
             this.elements.sendBtn.textContent = 'Send';
+            if (this.updateSendButtonState) {
+                this.updateSendButtonState();
+            }
         }
     }
 
@@ -368,19 +563,22 @@ class VLLMWebUI {
         
         if (role !== 'system') {
             const roleLabel = document.createElement('strong');
-            roleLabel.textContent = role.charAt(0).toUpperCase() + role.slice(1) + ':';
+            roleLabel.textContent = role.charAt(0).toUpperCase() + role.slice(1) + ': ';
             contentDiv.appendChild(roleLabel);
         }
         
-        const text = document.createElement('div');
-        text.textContent = content;
-        contentDiv.appendChild(text);
+        const textSpan = document.createElement('span');
+        textSpan.className = 'message-text';
+        textSpan.textContent = content;
+        contentDiv.appendChild(textSpan);
         
         messageDiv.appendChild(contentDiv);
         this.elements.chatContainer.appendChild(messageDiv);
         
         // Auto-scroll
         this.elements.chatContainer.scrollTop = this.elements.chatContainer.scrollHeight;
+        
+        return messageDiv;
     }
 
     clearChat() {
@@ -395,6 +593,27 @@ class VLLMWebUI {
     }
 
     addLog(message, type = 'info') {
+        // Check if server startup is complete (match various formats)
+        if (message && (message.includes('Application startup complete') || 
+                       message.includes('Uvicorn running') ||
+                       message.match(/Application startup complete/i))) {
+            console.log('🎉 Server startup detected! Setting serverReady = true');
+            this.serverReady = true;
+            this.updateSendButtonState();
+        }
+        
+        // Auto-detect log type if not specified
+        if (type === 'info' && message) {
+            const lowerMsg = message.toLowerCase();
+            if (lowerMsg.includes('error') || lowerMsg.includes('failed') || lowerMsg.includes('exception')) {
+                type = 'error';
+            } else if (lowerMsg.includes('warning') || lowerMsg.includes('warn')) {
+                type = 'warning';
+            } else if (lowerMsg.includes('success') || lowerMsg.includes('started') || lowerMsg.includes('complete')) {
+                type = 'success';
+            }
+        }
+        
         const logEntry = document.createElement('div');
         logEntry.className = `log-entry ${type}`;
         
@@ -413,6 +632,23 @@ class VLLMWebUI {
         const logs = this.elements.logsContainer.querySelectorAll('.log-entry');
         if (logs.length > maxLogs) {
             logs[0].remove();
+        }
+    }
+    
+    updateSendButtonState() {
+        // Update Send button appearance when server is ready
+        if (this.serverReady && this.serverRunning) {
+            // Only add if not already added (to avoid duplicate notifications)
+            if (!this.elements.sendBtn.classList.contains('btn-ready')) {
+                this.elements.sendBtn.classList.add('btn-ready');
+                this.elements.sendBtn.disabled = false;
+                // Add a brief notification
+                this.showNotification('🎉 Server is ready to chat!', 'success');
+                console.log('✅ Send button turned green!');
+            }
+        } else if (!this.serverReady) {
+            // Only remove if server is not ready
+            this.elements.sendBtn.classList.remove('btn-ready');
         }
     }
 
@@ -451,27 +687,90 @@ class VLLMWebUI {
         }, 3000);
     }
 
+    updateChatMetrics(metrics) {
+        // Update all metric displays
+        const promptTokensEl = document.getElementById('metric-prompt-tokens');
+        const completionTokensEl = document.getElementById('metric-completion-tokens');
+        const totalTokensEl = document.getElementById('metric-total-tokens');
+        const timeTakenEl = document.getElementById('metric-time-taken');
+        const tokensPerSecEl = document.getElementById('metric-tokens-per-sec');
+        
+        if (promptTokensEl) {
+            promptTokensEl.textContent = metrics.promptTokens || '-';
+            promptTokensEl.classList.add('updated');
+            setTimeout(() => promptTokensEl.classList.remove('updated'), 500);
+        }
+        
+        if (completionTokensEl) {
+            completionTokensEl.textContent = metrics.completionTokens || '-';
+            completionTokensEl.classList.add('updated');
+            setTimeout(() => completionTokensEl.classList.remove('updated'), 500);
+        }
+        
+        if (totalTokensEl) {
+            const total = (metrics.totalTokens || (metrics.promptTokens + metrics.completionTokens));
+            totalTokensEl.textContent = total;
+            totalTokensEl.classList.add('updated');
+            setTimeout(() => totalTokensEl.classList.remove('updated'), 500);
+        }
+        
+        if (timeTakenEl) {
+            timeTakenEl.textContent = `${metrics.timeTaken.toFixed(2)}s`;
+            timeTakenEl.classList.add('updated');
+            setTimeout(() => timeTakenEl.classList.remove('updated'), 500);
+        }
+        
+        if (tokensPerSecEl) {
+            const tokensPerSec = metrics.completionTokens / metrics.timeTaken;
+            tokensPerSecEl.textContent = tokensPerSec.toFixed(2);
+            tokensPerSecEl.classList.add('updated');
+            setTimeout(() => tokensPerSecEl.classList.remove('updated'), 500);
+        }
+    }
+
     updateCommandPreview() {
         const model = this.elements.customModel.value.trim() || this.elements.modelSelect.value;
         const host = this.elements.host.value;
         const port = this.elements.port.value;
-        const tensorParallel = this.elements.tensorParallel.value;
-        const gpuMemory = parseFloat(this.elements.gpuMemory.value) / 100;
         const dtype = this.elements.dtype.value;
         const maxModelLen = this.elements.maxModelLen.value;
         const trustRemoteCode = this.elements.trustRemoteCode.checked;
         const enablePrefixCaching = this.elements.enablePrefixCaching.checked;
         const disableLogStats = this.elements.disableLogStats.checked;
+        const isCpuMode = this.elements.modeCpu.checked;
         
         // Build command string
-        let cmd = `python -m vllm.entrypoints.openai.api_server`;
-        cmd += ` \\\n  --model ${model}`;
-        cmd += ` \\\n  --host ${host}`;
-        cmd += ` \\\n  --port ${port}`;
-        cmd += ` \\\n  --tensor-parallel-size ${tensorParallel}`;
-        cmd += ` \\\n  --gpu-memory-utilization ${gpuMemory}`;
-        cmd += ` \\\n  --dtype ${dtype}`;
-        cmd += ` \\\n  --load-format auto`;
+        let cmd;
+        
+        if (isCpuMode) {
+            // CPU mode: show environment variables and use openai.api_server
+            const cpuKvcache = this.elements.cpuKvcache?.value || '40';
+            const cpuThreads = this.elements.cpuThreads?.value || 'auto';
+            
+            cmd = `# CPU Mode - Set environment variables:\n`;
+            cmd += `export VLLM_CPU_KVCACHE_SPACE=${cpuKvcache}\n`;
+            cmd += `export VLLM_CPU_OMP_THREADS_BIND=${cpuThreads}\n\n`;
+            cmd += `python -m vllm.entrypoints.openai.api_server`;
+            cmd += ` \\\n  --model ${model}`;
+            cmd += ` \\\n  --host ${host}`;
+            cmd += ` \\\n  --port ${port}`;
+            cmd += ` \\\n  --dtype bfloat16`;
+        } else {
+            // GPU mode: use openai.api_server
+            cmd = `python -m vllm.entrypoints.openai.api_server`;
+            cmd += ` \\\n  --model ${model}`;
+            cmd += ` \\\n  --host ${host}`;
+            cmd += ` \\\n  --port ${port}`;
+            cmd += ` \\\n  --dtype ${dtype}`;
+            
+            // GPU-specific flags
+            const tensorParallel = this.elements.tensorParallel.value;
+            const gpuMemory = parseFloat(this.elements.gpuMemory.value) / 100;
+            
+            cmd += ` \\\n  --tensor-parallel-size ${tensorParallel}`;
+            cmd += ` \\\n  --gpu-memory-utilization ${gpuMemory}`;
+            cmd += ` \\\n  --load-format auto`;
+        }
         
         if (maxModelLen) {
             cmd += ` \\\n  --max-model-len ${maxModelLen}`;
@@ -489,12 +788,12 @@ class VLLMWebUI {
             cmd += ` \\\n  --disable-log-stats`;
         }
         
-        // Update the display
-        this.elements.commandText.textContent = cmd;
+        // Update the display (use value for textarea)
+        this.elements.commandText.value = cmd;
     }
 
     async copyCommand() {
-        const commandText = this.elements.commandText.textContent;
+        const commandText = this.elements.commandText.value;
         
         try {
             await navigator.clipboard.writeText(commandText);

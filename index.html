@@ -30,17 +30,28 @@
                     <div class="form-group">
                         <label for="model-select">Model</label>
                         <select id="model-select" class="form-control">
-                            <option value="facebook/opt-125m">facebook/opt-125m (125M)</option>
-                            <option value="facebook/opt-350m">facebook/opt-350m (350M)</option>
-                            <option value="facebook/opt-1.3b">facebook/opt-1.3b (1.3B)</option>
-                            <option value="facebook/opt-2.7b">facebook/opt-2.7b (2.7B)</option>
-                            <option value="meta-llama/Llama-2-7b-chat-hf">Llama-2-7b-chat-hf (7B)</option>
-                            <option value="meta-llama/Llama-2-13b-chat-hf">Llama-2-13b-chat-hf (13B)</option>
-                            <option value="mistralai/Mistral-7B-Instruct-v0.2">Mistral-7B-Instruct (7B)</option>
-                            <option value="codellama/CodeLlama-7b-Instruct-hf">CodeLlama-7b-Instruct (7B)</option>
+                            <option value="TinyLlama/TinyLlama-1.1B-Chat-v1.0" selected>TinyLlama/TinyLlama-1.1B-Chat-v1.0</option>
+                            <option value="RedHatAI/Llama-3.2-1B-Instruct-FP8">RedHatAI/Llama-3.2-1B-Instruct-FP8</option>
+                            <option value="RedHatAI/Meta-Llama-3.1-8B-Instruct-FP8">RedHatAI/Meta-Llama-3.1-8B-Instruct-FP8</option>
                         </select>
-                        <small class="form-help">Or enter custom model name</small>
+                        <small class="form-help">All models support chat interface</small>
                         <input type="text" id="custom-model" class="form-control" placeholder="Custom model name">
+                    </div>
+
+                    <!-- CPU/GPU Mode Toggle -->
+                    <div class="form-group mode-toggle-group">
+                        <label>Compute Mode</label>
+                        <div class="mode-toggle-buttons">
+                            <label class="mode-button active" id="mode-cpu-label">
+                                <input type="radio" name="compute-mode" id="mode-cpu" value="cpu" checked>
+                                <span>🖥️ CPU</span>
+                            </label>
+                            <label class="mode-button" id="mode-gpu-label">
+                                <input type="radio" name="compute-mode" id="mode-gpu" value="gpu">
+                                <span>🎮 GPU</span>
+                            </label>
+                        </div>
+                        <small class="form-help" id="mode-help-text">CPU mode is recommended for macOS</small>
                     </div>
 
                     <div class="form-row">
@@ -54,14 +65,36 @@
                         </div>
                     </div>
 
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="tensor-parallel">Tensor Parallel Size</label>
-                            <input type="number" id="tensor-parallel" class="form-control" value="1" min="1">
+                    <!-- GPU-specific settings (hidden in CPU mode) -->
+                    <div id="gpu-settings">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="tensor-parallel">Tensor Parallel Size</label>
+                                <input type="number" id="tensor-parallel" class="form-control" value="1" min="1">
+                            </div>
+                            <div class="form-group">
+                                <label for="gpu-memory">GPU Memory (%)</label>
+                                <input type="number" id="gpu-memory" class="form-control" value="90" min="10" max="100" step="5">
+                            </div>
                         </div>
-                        <div class="form-group">
-                            <label for="gpu-memory">GPU Memory (%)</label>
-                            <input type="number" id="gpu-memory" class="form-control" value="90" min="10" max="100" step="5">
+                    </div>
+
+                    <!-- CPU-specific settings (shown in CPU mode) -->
+                    <div id="cpu-settings" style="display: block;">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="cpu-kvcache">CPU KV Cache Space (GB)</label>
+                                <input type="number" id="cpu-kvcache" class="form-control" value="40" min="1" max="200">
+                                <small class="form-help">Memory allocated for KV cache</small>
+                            </div>
+                            <div class="form-group">
+                                <label for="cpu-threads">CPU Thread Binding</label>
+                                <select id="cpu-threads" class="form-control">
+                                    <option value="auto">Auto (Recommended)</option>
+                                    <option value="cores">Cores</option>
+                                    <option value="none">None</option>
+                                </select>
+                            </div>
                         </div>
                     </div>
 
@@ -70,14 +103,16 @@
                         <select id="dtype" class="form-control">
                             <option value="auto">Auto</option>
                             <option value="float16">Float16</option>
-                            <option value="bfloat16">BFloat16</option>
+                            <option value="bfloat16" selected>BFloat16</option>
                             <option value="float32">Float32</option>
                         </select>
+                        <small class="form-help" id="dtype-help-text">BFloat16 recommended for CPU</small>
                     </div>
 
                     <div class="form-group">
                         <label for="max-model-len">Max Model Length (optional)</label>
                         <input type="number" id="max-model-len" class="form-control" placeholder="Auto">
+                        <small class="form-help">⚠️ Leave empty for auto-detect. Setting too high may cause errors.</small>
                     </div>
 
                     <div class="form-group checkbox-group">
@@ -107,10 +142,8 @@
                             <h3>🖥️ Command Preview</h3>
                             <button id="copy-command-btn" class="btn btn-secondary btn-sm" title="Copy command">📋 Copy</button>
                         </div>
-                        <div id="command-preview" class="command-preview">
-                            <code id="command-text">python -m vllm.entrypoints.openai.api_server --model facebook/opt-125m</code>
-                        </div>
-                        <small class="command-help">This command will be executed when you start the server</small>
+                        <textarea id="command-text" class="command-preview-textarea" rows="8" spellcheck="false">python -m vllm.entrypoints.openai.api_server --model facebook/opt-125m</textarea>
+                        <small class="command-help">💡 Edit the command directly or use the form above. Your edits will be used when starting the server.</small>
                     </div>
 
                     <div class="button-group">
@@ -126,7 +159,7 @@
                 <div class="panel">
                     <div class="panel-header">
                         <h2>💬 Chat Interface</h2>
-                        <button id="clear-chat-btn" class="btn btn-secondary btn-sm">Clear</button>
+                        <button id="clear-chat-btn" class="btn btn-secondary btn-sm" style="min-width: 80px; padding: 6px 16px;">Clear</button>
                     </div>
                     
                     <div id="chat-container" class="chat-container">
@@ -155,6 +188,36 @@
                         </div>
                     </div>
                 </div>
+                
+                <!-- Chat Performance Metrics Section -->
+                <div class="chat-metrics-below">
+                    <div class="panel-header">
+                        <h3>📊 Last Response Metrics</h3>
+                    </div>
+                    <div id="chat-metrics" class="chat-metrics-grid">
+                        <div class="chat-metric-item">
+                            <span class="metric-label">Prompt Tokens:</span>
+                            <span class="metric-value" id="metric-prompt-tokens">-</span>
+                        </div>
+                        <div class="chat-metric-item">
+                            <span class="metric-label">Completion Tokens:</span>
+                            <span class="metric-value" id="metric-completion-tokens">-</span>
+                        </div>
+                        <div class="chat-metric-item">
+                            <span class="metric-label">Total Tokens:</span>
+                            <span class="metric-value" id="metric-total-tokens">-</span>
+                        </div>
+                        <div class="chat-metric-item">
+                            <span class="metric-label">Time Taken:</span>
+                            <span class="metric-value" id="metric-time-taken">-</span>
+                        </div>
+                        <div class="chat-metric-item">
+                            <span class="metric-label">Tokens/sec:</span>
+                            <span class="metric-value" id="metric-tokens-per-sec">-</span>
+                        </div>
+                    </div>
+                </div>
+                
                 <div class="resize-handle resize-handle-vertical" data-direction="horizontal"></div>
             </main>
 
@@ -163,7 +226,7 @@
                 <div class="panel">
                     <div class="panel-header">
                         <h2>📋 Server Logs</h2>
-                        <button id="clear-logs-btn" class="btn btn-secondary btn-sm">Clear</button>
+                        <button id="clear-logs-btn" class="btn btn-secondary btn-sm" style="min-width: 80px; padding: 6px 16px;">Clear</button>
                     </div>
                     <div id="logs-container" class="logs-container">
                         <div class="log-entry info">Waiting for connection...</div>

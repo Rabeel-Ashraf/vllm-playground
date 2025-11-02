@@ -11,7 +11,7 @@ from typing import Optional, List, Dict, Any
 from pathlib import Path
 
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException
-from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi.responses import HTMLResponse, JSONResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 import uvicorn
@@ -48,6 +48,10 @@ class VLLMConfig(BaseModel):
     load_format: str = "auto"
     disable_log_stats: bool = False
     enable_prefix_caching: bool = False
+    # CPU-specific options
+    use_cpu: bool = False
+    cpu_kvcache_space: int = 40  # GB for CPU KV cache
+    cpu_omp_threads_bind: str = "auto"  # CPU thread binding
 
 
 class ChatMessage(BaseModel):
@@ -136,6 +140,30 @@ async def start_server(config: VLLMConfig):
         raise HTTPException(status_code=400, detail="Server is already running")
     
     try:
+        # Check if user manually selected CPU mode (takes precedence)
+        if config.use_cpu:
+            logger.info("CPU mode manually selected by user")
+            await broadcast_log("[WEBUI] Using CPU mode (manual selection)")
+        else:
+            # Auto-detect macOS and enable CPU mode
+            import platform
+            is_macos = platform.system() == "Darwin"
+            
+            if is_macos:
+                config.use_cpu = True
+                logger.info("Detected macOS - enabling CPU mode")
+                await broadcast_log("[WEBUI] Detected macOS - using CPU mode")
+        
+        # Set environment variables for CPU mode
+        env = os.environ.copy()
+        if config.use_cpu:
+            env['VLLM_CPU_KVCACHE_SPACE'] = str(config.cpu_kvcache_space)
+            env['VLLM_CPU_OMP_THREADS_BIND'] = config.cpu_omp_threads_bind
+            logger.info(f"CPU Mode - VLLM_CPU_KVCACHE_SPACE={config.cpu_kvcache_space}, VLLM_CPU_OMP_THREADS_BIND={config.cpu_omp_threads_bind}")
+            await broadcast_log(f"[WEBUI] CPU Settings - KV Cache: {config.cpu_kvcache_space}GB, Thread Binding: {config.cpu_omp_threads_bind}")
+        else:
+            await broadcast_log("[WEBUI] Using GPU mode")
+        
         # Build command
         cmd = [
             sys.executable,
@@ -143,14 +171,32 @@ async def start_server(config: VLLMConfig):
             "--model", config.model,
             "--host", config.host,
             "--port", str(config.port),
-            "--tensor-parallel-size", str(config.tensor_parallel_size),
-            "--gpu-memory-utilization", str(config.gpu_memory_utilization),
-            "--dtype", config.dtype,
-            "--load-format", config.load_format,
         ]
+        
+        # Add GPU-specific parameters only if not using CPU
+        if not config.use_cpu:
+            cmd.extend([
+                "--tensor-parallel-size", str(config.tensor_parallel_size),
+                "--gpu-memory-utilization", str(config.gpu_memory_utilization),
+            ])
+        
+        # Set dtype (use bfloat16 for CPU as recommended)
+        if config.use_cpu and config.dtype == "auto":
+            cmd.extend(["--dtype", "bfloat16"])
+            await broadcast_log("[WEBUI] Using dtype=bfloat16 (recommended for CPU)")
+        else:
+            cmd.extend(["--dtype", config.dtype])
+        
+        # Add load-format only if not using CPU
+        if not config.use_cpu:
+            cmd.extend(["--load-format", config.load_format])
         
         if config.max_model_len:
             cmd.extend(["--max-model-len", str(config.max_model_len)])
+            # Set max-num-batched-tokens to match max-model-len to avoid validation errors
+            # This is especially important for CPU mode
+            cmd.extend(["--max-num-batched-tokens", str(config.max_model_len)])
+            await broadcast_log(f"[WEBUI] Using user-specified max-model-len: {config.max_model_len}")
         
         if config.trust_remote_code:
             cmd.append("--trust-remote-code")
@@ -165,14 +211,17 @@ async def start_server(config: VLLMConfig):
             cmd.append("--enable-prefix-caching")
         
         logger.info(f"Starting vLLM with command: {' '.join(cmd)}")
+        await broadcast_log(f"[WEBUI] Command: {' '.join(cmd)}")
         
-        # Start process
+        # Start process with environment variables
+        # Use line buffering (bufsize=1) and ensure output is captured
         vllm_process = subprocess.Popen(
             cmd,
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
             universal_newlines=True,
-            bufsize=1
+            bufsize=1,  # Line buffered
+            env=env
         )
         
         current_config = config
@@ -181,7 +230,12 @@ async def start_server(config: VLLMConfig):
         # Start log reader task
         asyncio.create_task(read_logs())
         
-        await broadcast_log(f"[WEBUI] Starting vLLM server with model: {config.model}")
+        await broadcast_log(f"[WEBUI] vLLM server starting with PID: {vllm_process.pid}")
+        await broadcast_log(f"[WEBUI] Model: {config.model}")
+        if config.use_cpu:
+            await broadcast_log(f"[WEBUI] Mode: CPU (KV Cache: {config.cpu_kvcache_space}GB)")
+        else:
+            await broadcast_log(f"[WEBUI] Mode: GPU (Memory: {int(config.gpu_memory_utilization * 100)}%)")
         
         return {"status": "started", "pid": vllm_process.pid}
     
@@ -228,15 +282,40 @@ async def read_logs():
         return
     
     try:
+        # Use a loop to continuously read output
+        loop = asyncio.get_event_loop()
+        
         while vllm_process.poll() is None:
-            line = vllm_process.stdout.readline()
-            if line:
-                await broadcast_log(line.strip())
-            else:
+            # Read line in a non-blocking way
+            try:
+                line = await loop.run_in_executor(None, vllm_process.stdout.readline)
+                if line:
+                    # Strip whitespace and send to clients
+                    line = line.strip()
+                    if line:  # Only send non-empty lines
+                        await broadcast_log(line)
+                        logger.debug(f"vLLM: {line}")
+                else:
+                    # No data, small sleep to prevent busy waiting
+                    await asyncio.sleep(0.1)
+            except Exception as e:
+                logger.error(f"Error reading line: {e}")
                 await asyncio.sleep(0.1)
         
-        # Process has ended
-        await broadcast_log(f"[WEBUI] vLLM process ended with code: {vllm_process.returncode}")
+        # Process has ended - read any remaining output
+        remaining_output = vllm_process.stdout.read()
+        if remaining_output:
+            for line in remaining_output.splitlines():
+                line = line.strip()
+                if line:
+                    await broadcast_log(line)
+        
+        # Log process exit
+        return_code = vllm_process.returncode
+        if return_code == 0:
+            await broadcast_log(f"[WEBUI] vLLM process ended normally (exit code: {return_code})")
+        else:
+            await broadcast_log(f"[WEBUI] vLLM process ended with code: {return_code}")
     
     except Exception as e:
         logger.error(f"Error reading logs: {e}")
@@ -312,23 +391,92 @@ async def chat(request: ChatRequest):
             "stream": request.stream
         }
         
-        async with aiohttp.ClientSession() as session:
-            async with session.post(url, json=payload) as response:
-                if response.status != 200:
-                    text = await response.text()
-                    raise HTTPException(status_code=response.status, detail=text)
-                
-                if request.stream:
-                    # Return streaming response
-                    content = await response.text()
-                    return JSONResponse(content={"response": content, "stream": True})
-                else:
+        async def generate_stream():
+            """Generator for streaming responses"""
+            async with aiohttp.ClientSession() as session:
+                async with session.post(url, json=payload) as response:
+                    if response.status != 200:
+                        text = await response.text()
+                        yield f"data: {{'error': '{text}'}}\n\n"
+                        return
+                    
+                    # Stream the response line by line
+                    async for line in response.content:
+                        if line:
+                            decoded_line = line.decode('utf-8')
+                            # Pass through the SSE formatted data
+                            if decoded_line.strip():
+                                yield decoded_line
+        
+        if request.stream:
+            # Return streaming response using SSE
+            return StreamingResponse(
+                generate_stream(),
+                media_type="text/event-stream",
+                headers={
+                    "Cache-Control": "no-cache",
+                    "Connection": "keep-alive",
+                }
+            )
+        else:
+            # Non-streaming response
+            async with aiohttp.ClientSession() as session:
+                async with session.post(url, json=payload) as response:
+                    if response.status != 200:
+                        text = await response.text()
+                        raise HTTPException(status_code=response.status, detail=text)
+                    
                     data = await response.json()
                     return data
     
     except Exception as e:
         logger.error(f"Chat error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
+
+class CompletionRequest(BaseModel):
+    """Completion request structure for non-chat models"""
+    prompt: str
+    temperature: float = 0.7
+    max_tokens: int = 512
+
+
+@app.post("/api/completion")
+async def completion(request: CompletionRequest):
+    """Proxy completion requests to vLLM server for base models"""
+    global current_config
+    
+    if vllm_process is None or vllm_process.poll() is not None:
+        raise HTTPException(status_code=400, detail="vLLM server is not running")
+    
+    if current_config is None:
+        raise HTTPException(status_code=400, detail="Server configuration not available")
+    
+    try:
+        import aiohttp
+        
+        url = f"http://{current_config.host}:{current_config.port}/v1/completions"
+        
+        payload = {
+            "model": current_config.model,
+            "prompt": request.prompt,
+            "temperature": request.temperature,
+            "max_tokens": request.max_tokens
+        }
+        
+        async with aiohttp.ClientSession() as session:
+            async with session.post(url, json=payload) as response:
+                if response.status != 200:
+                    text = await response.text()
+                    raise HTTPException(status_code=response.status, detail=text)
+                
+                data = await response.json()
+                return data
+    
+    except Exception as e:
+        logger.error(f"Completion error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
 
 
 @app.get("/api/models")
