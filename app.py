@@ -117,7 +117,7 @@ class BenchmarkResults(BaseModel):
 class CompressionConfig(BaseModel):
     """Configuration for model compression"""
     model: str
-    output_dir: str = Field(default_factory=lambda: tempfile.mkdtemp(prefix="compressed_"))
+    output_dir: Optional[str] = None  # Will be auto-generated if not provided
     
     # Quantization format
     quantization_format: Literal[
@@ -152,6 +152,8 @@ class CompressionStatus(BaseModel):
     compressed_size_mb: Optional[float] = None
     compression_ratio: Optional[float] = None
     error: Optional[str] = None
+    start_time: Optional[float] = None  # Unix timestamp
+    elapsed_time: Optional[float] = None  # Seconds
 
 
 class CompressionPreset(BaseModel):
@@ -1331,12 +1333,37 @@ async def start_compression(config: CompressionConfig):
     
     try:
         # Reset status
+        import time
         compression_status = CompressionStatus(
             running=True,
             progress=0.0,
             stage="initializing",
-            message="Starting compression..."
+            message="Starting compression...",
+            start_time=time.time()
         )
+        
+        # Generate output directory name if not provided
+        if not config.output_dir:
+            # Clean model name (remove org prefix, replace slashes and special chars)
+            model_name = config.model.split('/')[-1]  # Take last part after slash
+            model_name = model_name.replace('/', '_').replace(' ', '_').replace(':', '_')
+            
+            # Map scheme to shorter name
+            scheme_map = {
+                "W8A8_INT8": "w8a8_int8",
+                "W8A8_FP8": "w8a8_fp8",
+                "W4A16": "w4a16",
+                "W8A16": "w8a16",
+                "FP4_W4A16": "fp4_w4a16",
+                "FP4_W4A4": "fp4_w4a4",
+                "W4A4": "w4a4",
+            }
+            scheme_suffix = scheme_map.get(config.quantization_format, config.quantization_format.lower())
+            
+            # Add timestamp to avoid overwriting existing compressions
+            from datetime import datetime
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            config.output_dir = f"compressed_{model_name}_{scheme_suffix}_{timestamp}"
         
         # Create output directory
         compression_output_dir = Path(config.output_dir)
@@ -1366,6 +1393,16 @@ async def start_compression(config: CompressionConfig):
 async def get_compression_status() -> CompressionStatus:
     """Get current compression task status"""
     global compression_status
+    
+    # Calculate elapsed time if compression is running or completed
+    if compression_status.start_time is not None:
+        import time
+        if compression_status.running:
+            compression_status.elapsed_time = time.time() - compression_status.start_time
+        elif compression_status.elapsed_time is None:
+            # If completed but elapsed_time not set, calculate it
+            compression_status.elapsed_time = time.time() - compression_status.start_time
+    
     return compression_status
 
 
@@ -1530,6 +1567,17 @@ async def run_compression(config: CompressionConfig):
                 compression_status.original_size_mb / compressed_size
             )
         
+        # Calculate final elapsed time
+        import time
+        elapsed_seconds = time.time() - compression_status.start_time if compression_status.start_time else 0
+        compression_status.elapsed_time = elapsed_seconds
+        
+        # Format elapsed time as HH:MM:SS
+        hours = int(elapsed_seconds // 3600)
+        minutes = int((elapsed_seconds % 3600) // 60)
+        seconds = int(elapsed_seconds % 60)
+        time_str = f"{hours:02d}:{minutes:02d}:{seconds:02d}"
+        
         compression_status.stage = "complete"
         compression_status.progress = 100.0
         compression_status.message = f"Compression complete! Saved to: {config.output_dir}"
@@ -1539,6 +1587,7 @@ async def run_compression(config: CompressionConfig):
         await broadcast_log(f"[COMPRESSION] ✅ Compression complete!")
         await broadcast_log(f"[COMPRESSION] " + "="*60)
         await broadcast_log(f"[COMPRESSION] 📁 SAVED TO: {config.output_dir}")
+        await broadcast_log(f"[COMPRESSION] ⏱️  TIME TAKEN: {time_str}")
         await broadcast_log(f"[COMPRESSION] " + "="*60)
         if compression_status.original_size_mb and compression_status.compressed_size_mb:
             await broadcast_log(

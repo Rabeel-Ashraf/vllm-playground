@@ -1682,6 +1682,44 @@ body {
     border: 1px solid var(--border-color);
 }
 
+.compression-timer {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    padding: 15px 20px;
+    margin: 20px 0;
+    background: linear-gradient(135deg, #1a1f3a 0%, #2d3561 100%);
+    border: 2px solid var(--primary);
+    border-radius: 10px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+}
+
+.timer-icon {
+    font-size: 2rem;
+    filter: drop-shadow(0 0 8px rgba(59, 130, 246, 0.5));
+}
+
+.timer-content {
+    flex: 1;
+}
+
+.timer-label {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 5px;
+}
+
+.timer-value {
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: var(--primary);
+    font-family: 'Courier New', monospace;
+    text-shadow: 0 0 10px rgba(59, 130, 246, 0.4);
+    letter-spacing: 2px;
+}
+
 .size-comparison {
     display: flex;
     justify-content: space-around;

@@ -141,6 +141,8 @@ class VLLMWebUI {
             originalSize: document.getElementById('original-size'),
             compressedSize: document.getElementById('compressed-size'),
             compressionRatio: document.getElementById('compression-ratio'),
+            compressionTimer: document.getElementById('compression-timer'),
+            compressionTimerValue: document.getElementById('compression-timer-value'),
             outputDirectoryDisplay: document.getElementById('output-directory-display'),
             outputDirPath: document.getElementById('output-dir-path'),
             compressionActions: document.getElementById('compression-actions'),
@@ -1966,6 +1968,18 @@ class VLLMWebUI {
         this.elements.compressionStageBadge.textContent = status.stage.toUpperCase();
         this.elements.compressionStageBadge.className = `stage-badge stage-${status.stage}`;
         
+        // Update timer display
+        if (status.elapsed_time !== null && status.elapsed_time !== undefined) {
+            this.elements.compressionTimer.style.display = 'flex';
+            const hours = Math.floor(status.elapsed_time / 3600);
+            const minutes = Math.floor((status.elapsed_time % 3600) / 60);
+            const seconds = Math.floor(status.elapsed_time % 60);
+            const timeStr = `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+            this.elements.compressionTimerValue.textContent = timeStr;
+        } else if (status.running) {
+            this.elements.compressionTimer.style.display = 'flex';
+        }
+        
         // Update size comparison if available
         if (status.original_size_mb || status.compressed_size_mb) {
             this.elements.sizeComparison.style.display = 'flex';
@@ -2008,6 +2022,8 @@ class VLLMWebUI {
         this.elements.compressionActions.style.display = 'none';
         this.elements.sizeComparison.style.display = 'none';
         this.elements.outputDirectoryDisplay.style.display = 'none';
+        this.elements.compressionTimer.style.display = 'none';
+        this.elements.compressionTimerValue.textContent = '00:00:00';
         this.elements.compressionProgressFill.style.width = '0%';
         this.elements.compressionProgressPercent.textContent = '0%';
         this.elements.compressionProgressMessage.textContent = 'Ready to compress';
@@ -2115,12 +2131,22 @@ class VLLMWebUI {
         cmd += `    )\n`;
         cmd += ']\n\n';
         
+        // Generate output directory name based on model and scheme
+        const modelName = model.split('/').pop();  // Get last part after slash
+        const cleanModelName = modelName.replace(/[/:]/g, '_').replace(/\s+/g, '_');
+        const schemeLower = schemeMap[format] || format;
+        
+        // Add timestamp example (actual backend will use current time)
+        const now = new Date();
+        const timestamp = now.toISOString().replace(/[-:]/g, '').replace('T', '_').split('.')[0];
+        const outputDir = `./compressed_${cleanModelName}_${schemeLower.toLowerCase()}_${timestamp}`;
+        
         cmd += '# Run compression\n';
         cmd += 'oneshot(\n';
         cmd += `    model="${model}",\n`;
         cmd += `    dataset="${dataset}",\n`;
         cmd += `    recipe=recipe,\n`;
-        cmd += `    output_dir="./compressed_model",\n`;
+        cmd += `    output_dir="${outputDir}",  # Timestamp added to avoid overwriting\n`;
         cmd += `    max_seq_length=${seqLength},\n`;
         cmd += `    num_calibration_samples=${samples}\n`;
         cmd += ')';
