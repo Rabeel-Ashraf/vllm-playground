@@ -3032,7 +3032,13 @@ class VLLMWebUI {
         if (algorithm === 'SmoothQuant') {
             cmd += 'from llmcompressor.modifiers.smoothquant import SmoothQuantModifier\n';
         }
-        cmd += 'from llmcompressor.modifiers.quantization import GPTQModifier\n\n';
+        
+        // Import both modifiers, but use appropriate one based on format
+        if (format === 'W8A8_FP8') {
+            cmd += 'from llmcompressor.modifiers.quantization import QuantizationModifier\n\n';
+        } else {
+            cmd += 'from llmcompressor.modifiers.quantization import GPTQModifier\n\n';
+        }
         
         if (isGated || hfToken) {
             cmd += '# Set HuggingFace token for gated model\n';
@@ -3056,20 +3062,40 @@ class VLLMWebUI {
         // Map format to scheme
         const schemeMap = {
             'W8A8_INT8': 'W8A8',
-            'W8A8_FP8': 'W8A8_FP8',
+            'W8A8_FP8': null,  // Handled separately
             'W4A16': 'W4A16',
             'W8A16': 'W8A16',
             'FP4_W4A16': 'W4A16',
             'FP4_W4A4': 'W4A4',
             'W4A4': 'W4A4',
         };
-        const scheme = schemeMap[format] || 'W8A8';
+        const scheme = schemeMap[format];
         
-        cmd += `    GPTQModifier(\n`;
-        cmd += `        scheme="${scheme}",\n`;
-        cmd += `        targets="${targetLayers}",\n`;
-        cmd += `        ignore=["${ignoreLayers}"]\n`;
-        cmd += `    )\n`;
+        // FP8 requires QuantizationModifier with explicit config
+        if (format === 'W8A8_FP8') {
+            cmd += `    QuantizationModifier(\n`;
+            cmd += `        targets="${targetLayers}",\n`;
+            cmd += `        scheme={\n`;
+            cmd += `            "input_activations": {\n`;
+            cmd += `                "num_bits": 8,\n`;
+            cmd += `                "type": "float",\n`;
+            cmd += `                "symmetric": True,\n`;
+            cmd += `            },\n`;
+            cmd += `            "weights": {\n`;
+            cmd += `                "num_bits": 8,\n`;
+            cmd += `                "type": "float",\n`;
+            cmd += `                "symmetric": True,\n`;
+            cmd += `            }\n`;
+            cmd += `        },\n`;
+            cmd += `        ignore=["${ignoreLayers}"]\n`;
+            cmd += `    )\n`;
+        } else {
+            cmd += `    GPTQModifier(\n`;
+            cmd += `        scheme="${scheme || 'W8A8'}",\n`;
+            cmd += `        targets="${targetLayers}",\n`;
+            cmd += `        ignore=["${ignoreLayers}"]\n`;
+            cmd += `    )\n`;
+        }
         cmd += ']\n\n';
         
         // Generate output directory name based on model and scheme

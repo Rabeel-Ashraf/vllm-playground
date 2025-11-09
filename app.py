@@ -2361,9 +2361,10 @@ def build_compression_recipe(config: CompressionConfig) -> List:
     ignore = [layer.strip() for layer in (config.ignore_layers or "lm_head").split(",")]
     
     # Build scheme based on quantization format
+    # Note: FP8 requires QuantizationModifier with explicit config, not GPTQModifier
     scheme_map = {
         "W8A8_INT8": "W8A8",
-        "W8A8_FP8": "W8A8_FP8",
+        "W8A8_FP8": None,  # Handled separately below
         "W4A16": "W4A16",
         "W8A16": "W8A16",
         "FP4_W4A16": "W4A16",  # FP4 is handled by vLLM
@@ -2379,8 +2380,28 @@ def build_compression_recipe(config: CompressionConfig) -> List:
             SmoothQuantModifier(smoothing_strength=config.smoothing_strength)
         )
     
-    # Add quantization modifier based on algorithm
-    if config.algorithm in ["GPTQ", "SmoothQuant", "PTQ"]:
+    # Handle FP8 quantization separately (requires QuantizationModifier)
+    if config.quantization_format == "W8A8_FP8":
+        recipe.append(
+            QuantizationModifier(
+                targets=targets,
+                scheme={
+                    "input_activations": {
+                        "num_bits": 8,
+                        "type": "float",
+                        "symmetric": True,
+                    },
+                    "weights": {
+                        "num_bits": 8,
+                        "type": "float",
+                        "symmetric": True,
+                    }
+                },
+                ignore=ignore
+            )
+        )
+    # Add quantization modifier based on algorithm for non-FP8 formats
+    elif config.algorithm in ["GPTQ", "SmoothQuant", "PTQ"]:
         recipe.append(
             GPTQModifier(
                 scheme=scheme,
