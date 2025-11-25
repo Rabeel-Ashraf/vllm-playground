@@ -8,11 +8,15 @@ A modern web interface for managing and interacting with vLLM servers (www.githu
 
 **No more manual vLLM installation!** The Web UI now automatically manages vLLM in isolated containers, providing a seamless experience from local development to enterprise deployment.
 
-**📹 [Watch Demo: Automatic Container Startup](assets/start-vllm.gif)**
+**📹 Watch Demo: Automatic Container Startup**
+
+![Start vLLM Demo](assets/start-vllm.gif)
 
 *See how easy it is: Just click "Start Server" and the container orchestrator automatically starts the vLLM container - no manual installation or configuration needed!*
 
-**📹 [Watch Demo: Automatic Container Shutdown](assets/stop-vllm.gif)**
+**📹 Watch Demo: Automatic Container Shutdown**
+
+![Stop vLLM Demo](assets/stop-vllm.gif)
 
 *Clean shutdown: Click "Stop Server" and the container orchestrator gracefully stops the vLLM container with automatic cleanup!*
 
