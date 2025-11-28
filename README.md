@@ -549,6 +549,47 @@ oc logs -f deployment/vllm-playground-gpu -n vllm-playground
 oc describe pod <pod-name> -n vllm-playground
 ```
 
+#### Out of Memory (OOM) Issues
+
+**⚠️ IMPORTANT: Resource Requirements for GuideLLM Benchmarks**
+
+The Web UI pod requires sufficient memory to avoid OOM kills when running GuideLLM benchmarks. GuideLLM generates many concurrent requests for load testing, which can quickly consume available memory.
+
+**Memory usage scales with:**
+- Number of concurrent users/requests
+- Request rate (requests per second)
+- Model size and response length
+- Benchmark duration
+
+**Recommended Memory Limits:**
+
+- **GPU Mode (default)**: 16Gi minimum
+  - For intensive GuideLLM benchmarks: **32Gi+**
+  - For high-concurrency tests (50+ users): **64Gi+**
+
+- **CPU Mode**: 64Gi minimum
+  - For intensive GuideLLM benchmarks: **128Gi+**
+
+**To increase resources:**
+
+Edit `openshift/manifests/04-webui-deployment.yaml`:
+```yaml
+resources:
+  limits:
+    memory: "32Gi"  # Increase based on benchmark intensity
+    cpu: "8"
+```
+
+Then reapply:
+```bash
+oc apply -f openshift/manifests/04-webui-deployment.yaml
+```
+
+**Symptoms of OOM:**
+- Pod restarts during benchmarks
+- Benchmark failures with connection errors
+- `OOMKilled` status in pod events: `oc describe pod <pod-name>`
+
 #### Image Pull Errors
 
 **Note:** The deployment now uses publicly accessible container images:

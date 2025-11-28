@@ -369,6 +369,47 @@ class VLLMWebUI {
                 
                 console.warn('GuideLLM is not available. Install with: pip install guidellm');
             }
+            
+            // Check hardware capabilities
+            await this.checkHardwareCapabilities();
+        } catch (error) {
+            console.error('Error checking feature availability:', error);
+        }
+    }
+    
+    async checkHardwareCapabilities() {
+        try {
+            const response = await fetch('/api/hardware-capabilities');
+            const capabilities = await response.json();
+            
+            // Log hardware capabilities
+            console.log('Hardware capabilities:', capabilities);
+            
+            // Disable GPU option if GPU is not available
+            if (!capabilities.gpu_available) {
+                // Disable GPU radio button
+                this.elements.modeGpu.disabled = true;
+                this.elements.modeGpuLabel.classList.add('disabled');
+                this.elements.modeGpuLabel.title = 'GPU not available on this system. Requires CUDA-capable GPU and drivers.';
+                this.elements.modeGpuLabel.style.opacity = '0.5';
+                this.elements.modeGpuLabel.style.cursor = 'not-allowed';
+                
+                // Force CPU mode
+                this.elements.modeCpu.checked = true;
+                this.toggleComputeMode();
+                
+                // Update help text
+                this.elements.modeHelpText.innerHTML = '⚠️ GPU not available - Running in CPU-only mode';
+                this.elements.modeHelpText.style.color = '#f59e0b';
+                
+                console.warn('GPU is not available on this system');
+                this.addLog('[SYSTEM] GPU not detected - GPU mode disabled', 'warning');
+            } else {
+                // GPU is available
+                console.log('GPU is available on this system');
+                this.elements.modeHelpText.innerHTML = 'CPU and GPU modes available. GPU recommended for larger models.';
+                this.addLog('[SYSTEM] GPU detected - Both CPU and GPU modes available', 'info');
+            }
         } catch (error) {
             console.error('Failed to check feature availability:', error);
         }

@@ -24,7 +24,7 @@ spec:
       serviceAccountName: vllm-playground-sa  # Important: Use SA with pod creation permissions
       containers:
       - name: webui
-        image: quay.io/rh_ee_micyang/vllm-playground:0.2
+        image: quay.io/rh_ee_micyang/vllm-playground:0.3  #separate the llmcompressor from vllm/guidellm
         imagePullPolicy: Always
         ports:
         - containerPort: 7860
@@ -59,16 +59,20 @@ spec:
         # when users click "Start Server" in the Web UI
         resources:
           requests:
-            memory: "512Mi"
-            cpu: "500m"
+            memory: "8Gi"
+            cpu: "4"
           limits:
-            memory: "2Gi"
-            cpu: "2"
+            # IMPORTANT: Higher memory limits are required to avoid OOM issues with GuideLLM
+            # - GuideLLM benchmarks generate many concurrent requests for load testing
+            # - Memory usage scales with: concurrent users, request rate, and model size
+            #   Recommended: 16Gi minimum, 32Gi+ for intensive benchmarks
+            memory: "16Gi"  # Increase to 32Gi+ for intensive GuideLLM benchmarks
+            cpu: "8"
         livenessProbe:
           httpGet:
             path: /api/status
             port: 7860
-          initialDelaySeconds: 30
+          initialDelaySeconds: 40
           periodSeconds: 10
           timeoutSeconds: 5
           failureThreshold: 3
@@ -76,7 +80,7 @@ spec:
           httpGet:
             path: /api/features
             port: 7860
-          initialDelaySeconds: 10
+          initialDelaySeconds: 20
           periodSeconds: 5
           timeoutSeconds: 5
           failureThreshold: 3
@@ -142,16 +146,20 @@ spec:
         # when users click "Start Server" in the Web UI
         resources:
           requests:
-            memory: "512Mi"
-            cpu: "500m"
+            memory: "32Gi"
+            cpu: "8"
           limits:
-            memory: "2Gi"
-            cpu: "2"
+            # IMPORTANT: Higher memory limits are required to avoid OOM issues with GuideLLM
+            # - GuideLLM benchmarks generate many concurrent requests for load testing
+            # - Memory usage scales with: concurrent users, request rate, and model size
+            #   Recommended: 64Gi minimum, 128Gi+ for intensive benchmarks
+            memory: "64Gi"  # Increase to 128Gi+ for intensive GuideLLM benchmarks
+            cpu: "16"
         livenessProbe:
           httpGet:
             path: /api/status
             port: 7860
-          initialDelaySeconds: 30
+          initialDelaySeconds: 40
           periodSeconds: 10
           timeoutSeconds: 5
           failureThreshold: 3
@@ -159,7 +167,7 @@ spec:
           httpGet:
             path: /api/features
             port: 7860
-          initialDelaySeconds: 10
+          initialDelaySeconds: 20
           periodSeconds: 5
           timeoutSeconds: 5
           failureThreshold: 3

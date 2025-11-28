@@ -498,6 +498,18 @@ body {
     gap: 8px;
 }
 
+.mode-button.disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    pointer-events: none;
+}
+
+.mode-button.disabled:hover {
+    border-color: var(--border-color);
+    background: var(--bg-tertiary);
+    transform: none;
+}
+
 #cpu-settings, #gpu-settings {
     transition: opacity 0.3s, max-height 0.3s;
 }
