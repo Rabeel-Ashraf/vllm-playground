@@ -3378,17 +3378,19 @@ async def run_guidellm_benchmark(config: BenchmarkConfig, server_config: VLLMCon
 
 
 
-def main():
+def main(host: str = None, port: int = None, reload: bool = False):
     """Main entry point"""
     logger.info("Starting vLLM Playground...")
     
-    # Get port from environment or use default
-    webui_port = int(os.environ.get("WEBUI_PORT", "7860"))
+    # Get host/port from arguments, environment, or use defaults
+    webui_host = host or os.environ.get("WEBUI_HOST", "0.0.0.0")
+    webui_port = port or int(os.environ.get("WEBUI_PORT", "7860"))
     
     uvicorn.run(
         app,
-        host="0.0.0.0",
+        host=webui_host,
         port=webui_port,
+        reload=reload,
         log_level="info"
     )
 

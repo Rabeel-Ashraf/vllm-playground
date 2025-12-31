@@ -188,7 +188,7 @@ a, button, input, select, textarea, .btn, .nav-item, .panel, .card, .form-contro
 
 /* Left Navigation Sidebar */
 .nav-sidebar {
-    width: 220px;
+    width: 255px;
     min-width: 60px;
     background: linear-gradient(180deg, #0c1222 0%, #111827 100%);
     border-right: 1px solid rgba(255, 255, 255, 0.08);
@@ -223,7 +223,7 @@ a, button, input, select, textarea, .btn, .nav-item, .panel, .card, .form-contro
 }
 
 .nav-title {
-    font-size: 1rem;
+    font-size: 1.5rem;
     font-weight: 700;
     background: linear-gradient(135deg, #60a5fa 0%, #a78bfa 100%);
     -webkit-background-clip: text;
@@ -376,7 +376,7 @@ a, button, input, select, textarea, .btn, .nav-item, .panel, .card, .form-contro
 /* Navigation Resize Handle */
 .nav-resize-handle {
     position: fixed;
-    left: 220px;
+    left: 260px;
     top: 0;
     bottom: 0;
     width: 4px;
@@ -398,7 +398,7 @@ a, button, input, select, textarea, .btn, .nav-item, .panel, .card, .form-contro
 /* Main App Container */
 .app-container {
     flex: 1;
-    margin-left: 220px;
+    margin-left: 255px;
     display: flex;
     flex-direction: column;
     min-height: 100vh;
@@ -1293,6 +1293,15 @@ a, button, input, select, textarea, .btn, .nav-item, .panel, .card, .form-contro
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.5px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.panel-header-logo {
+    height: 20px;
+    width: auto;
+    object-fit: contain;
     color: var(--text-secondary);
     display: flex;
     align-items: center;
@@ -1891,9 +1900,19 @@ a, button, input, select, textarea, .btn, .nav-item, .panel, .card, .form-contro
 .chat-input-area {
     flex-shrink: 0;
     margin-top: auto;
-    max-height: 400px;
-    overflow-y: auto;
     padding-right: 5px;
+    position: relative;
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 10px;
+}
+
+/* Buttons in chat area - normal weight */
+.chat-input-area .btn,
+.chat-input-area select,
+.inline-panel .btn,
+.inline-panel select {
+    font-weight: 400;
 }
 
 /* Scrollbar styling for chat input area */
@@ -2031,9 +2050,7 @@ a, button, input, select, textarea, .btn, .nav-item, .panel, .card, .form-contro
 }
 
 .input-group {
-    display: flex;
-    gap: 10px;
-    align-items: stretch;
+    display: contents;
 }
 
 .input-with-templates {
@@ -2103,16 +2120,16 @@ a, button, input, select, textarea, .btn, .nav-item, .panel, .card, .form-contro
     background: var(--bg-primary);
     border-radius: 8px;
     font-family: 'Monaco', 'Courier New', monospace;
-    font-size: 0.85rem;
-    line-height: 1.5;
+    font-size: 0.7rem;
+    line-height: 1.4;
     min-height: 200px;
     overflow-y: auto;
     overflow-x: hidden;
 }
 
 .log-entry {
-    padding: 6px 10px;
-    margin-bottom: 4px;
+    padding: 4px 8px;
+    margin-bottom: 2px;
     border-radius: 4px;
     border-left: 3px solid transparent;
     word-wrap: break-word;
@@ -4987,6 +5004,597 @@ a, button, input, select, textarea, .btn, .nav-item, .panel, .card, .form-contro
 }
 
 /* ============================================
+   Chat Toolbar (ChatGPT-style Icon Bar)
+   ============================================ */
+
+.chat-toolbar {
+    display: contents;
+}
+
+.toolbar-icons {
+    display: flex;
+    gap: 4px;
+    padding: 8px 0 4px 0;
+    border-top: 1px solid var(--border-color);
+    margin-top: 8px;
+}
+
+.toolbar-right {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    padding: 8px 0 4px 0;
+    border-top: 1px solid var(--border-color);
+    margin-top: 8px;
+}
+
+.toolbar-icon-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 8px;
+    background: transparent;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    position: relative;
+}
+
+.toolbar-icon-btn:hover {
+    background: var(--hover-overlay);
+}
+
+.toolbar-icon-btn.active {
+    background: var(--hover-overlay);
+}
+
+.toolbar-icon-btn.active::after {
+    content: '';
+    position: absolute;
+    bottom: 2px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 20px;
+    height: 2px;
+    background: var(--primary-color);
+    border-radius: 2px;
+}
+
+/* Modified indicator dot - shows when settings differ from defaults */
+.toolbar-icon-btn.modified::before {
+    content: '';
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    width: 8px;
+    height: 8px;
+    background: var(--warning-color);
+    border-radius: 50%;
+    border: 2px solid var(--bg-secondary);
+    z-index: 1;
+}
+
+.toolbar-icon,
+.panel-icon {
+    width: 20px;
+    height: 20px;
+    display: block;
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+    opacity: 0.8;
+    transition: opacity 0.2s;
+}
+
+.panel-icon {
+    opacity: 1;
+    flex-shrink: 0;
+}
+
+.toolbar-icon-btn:hover .toolbar-icon {
+    opacity: 1;
+}
+
+/* Modern SVG icons as data URIs */
+.icon-settings {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23a1a1aa' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z'/%3E%3Ccircle cx='12' cy='12' r='3'/%3E%3C/svg%3E");
+}
+
+.icon-prompt {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23a1a1aa' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z'/%3E%3Cline x1='9' y1='10' x2='15' y2='10'/%3E%3C/svg%3E");
+}
+
+.icon-structured {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23a1a1aa' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 7V4h16v3'/%3E%3Cpath d='M9 20h6'/%3E%3Cpath d='M12 4v16'/%3E%3Crect x='8' y='10' width='8' height='6' rx='1'/%3E%3C/svg%3E");
+}
+
+.icon-tools {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23a1a1aa' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z'/%3E%3C/svg%3E");
+}
+
+.icon-mcp {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23a1a1aa' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71'/%3E%3Cpath d='M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71'/%3E%3C/svg%3E");
+}
+
+.icon-rag {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23a1a1aa' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cline x1='12' y1='5' x2='12' y2='19'/%3E%3Cline x1='5' y1='12' x2='19' y2='12'/%3E%3C/svg%3E");
+}
+
+/* Light mode icons */
+[data-theme="light"] .icon-settings,
+[data-theme="light"] .icon-prompt,
+[data-theme="light"] .icon-structured,
+[data-theme="light"] .icon-tools,
+[data-theme="light"] .icon-mcp,
+[data-theme="light"] .icon-rag {
+    filter: brightness(0.5);
+}
+
+[data-theme="light"] .panel-icon {
+    filter: brightness(0.4);
+}
+
+/* Tooltip that appears on hover */
+.toolbar-tooltip {
+    position: absolute;
+    bottom: calc(100% + 8px);
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+    padding: 6px 10px;
+    border-radius: 6px;
+    font-size: 0.75rem;
+    white-space: nowrap;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.2s ease;
+    pointer-events: none;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+    border: 1px solid var(--border-color);
+    z-index: 10000;
+}
+
+/* Arrow for tooltip */
+.toolbar-tooltip::after {
+    content: '';
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    border: 5px solid transparent;
+    border-top-color: var(--bg-tertiary);
+}
+
+.toolbar-tooltip::before {
+    content: '';
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    border: 6px solid transparent;
+    border-top-color: var(--border-color);
+}
+
+/* Show tooltip on hover */
+.toolbar-icon-btn:hover .toolbar-tooltip {
+    opacity: 1;
+    visibility: visible;
+}
+
+.toolbar-icon-btn.active .toolbar-icon {
+    filter: brightness(1.2);
+}
+
+.toolbar-right {
+    display: flex;
+    align-items: center;
+}
+
+.toolbar-right .message-templates {
+    width: 100%;
+    font-size: 0.75rem;
+    padding: 4px 8px;
+    background: transparent;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    color: var(--text-secondary);
+    cursor: pointer;
+}
+
+.toolbar-right .message-templates:hover {
+    border-color: var(--primary-color);
+    color: var(--text-primary);
+}
+
+/* ============================================
+   Inline Expandable Panels
+   ============================================ */
+
+.inline-panels {
+    grid-column: 1 / -1;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 8px;
+}
+
+.inline-panel {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    overflow: hidden;
+    animation: slideDown 0.2s ease-out;
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        max-height: 0;
+        margin-top: 0;
+    }
+    to {
+        opacity: 1;
+        max-height: 500px;
+        margin-top: 8px;
+    }
+}
+
+.inline-panel-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 14px;
+    background: var(--bg-tertiary);
+    border-bottom: 1px solid var(--border-color);
+}
+
+.inline-panel-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.panel-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 20px;
+}
+
+.inline-panel-close {
+    background: none;
+    border: none;
+    color: var(--text-secondary);
+    cursor: pointer;
+    font-size: 1rem;
+    padding: 4px 6px;
+    border-radius: 4px;
+    transition: all 0.2s;
+    line-height: 1;
+}
+
+.inline-panel-close:hover {
+    background: var(--hover-overlay);
+    color: var(--text-primary);
+}
+
+.inline-panel-content {
+    padding: 14px;
+}
+
+.inline-panel-scrollable {
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+.inline-panel-content .form-group {
+    margin-bottom: 12px;
+}
+
+.inline-panel-content .form-group:last-child {
+    margin-bottom: 0;
+}
+
+/* Param row for side-by-side inputs */
+.param-row {
+    display: flex;
+    gap: 16px;
+}
+
+.param-row .param-group {
+    flex: 1;
+}
+
+.panel-actions {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 8px;
+}
+
+/* Panel grid layout - matches main input area grid */
+.panel-grid {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 10px;
+    align-items: start;
+}
+
+.panel-grid-full {
+    grid-column: 1 / -1;
+}
+
+/* Button stack for panels */
+.panel-btn-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.panel-btn-stack .btn,
+.panel-btn-stack select {
+    width: 100%;
+    text-align: center;
+}
+
+.panel-btn-stack select {
+    cursor: pointer;
+    appearance: none;
+    padding: 6px 10px;
+    font-size: 0.8rem;
+}
+
+.popover-content label {
+    display: block;
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: var(--text-secondary);
+    margin-bottom: 6px;
+}
+
+.popover-content .form-help {
+    display: block;
+    font-size: 0.7rem;
+    color: var(--text-secondary);
+    margin-top: 4px;
+    opacity: 0.8;
+}
+
+.popover-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px solid var(--border-color);
+}
+
+/* Param groups in popovers */
+.popover-content .param-group {
+    margin-bottom: 16px;
+}
+
+.popover-content .param-group label {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 8px;
+}
+
+.popover-content .param-group input[type="range"] {
+    width: 100%;
+    margin-top: 4px;
+}
+
+.popover-content .param-value-input {
+    width: 60px;
+    padding: 2px 6px;
+    font-size: 0.8rem;
+    text-align: center;
+    background: var(--bg-primary);
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    color: var(--text-primary);
+}
+
+/* System prompt textarea in popover */
+.popover-content .system-prompt-input {
+    width: 100%;
+    padding: 10px;
+    font-size: 0.85rem;
+    background: var(--bg-primary);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    color: var(--text-primary);
+    resize: vertical;
+    min-height: 80px;
+}
+
+.popover-content .system-prompt-input:focus {
+    outline: none;
+    border-color: var(--primary-color);
+}
+
+/* ============================================
+   Structured Outputs Styles
+   ============================================ */
+
+.output-type-buttons {
+    display: flex;
+    gap: 4px;
+    flex-wrap: wrap;
+}
+
+.output-type-btn {
+    padding: 6px 12px;
+    font-size: 0.75rem;
+    background: var(--bg-primary);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.output-type-btn:hover {
+    border-color: var(--primary-color);
+    color: var(--primary-color);
+}
+
+.output-type-btn.active {
+    background: var(--primary-color);
+    border-color: var(--primary-color);
+    color: white;
+}
+
+.structured-config {
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px solid var(--border-color);
+}
+
+.structured-config .preset-buttons {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    margin-top: 8px;
+}
+
+.code-textarea {
+    font-family: 'SF Mono', 'Monaco', 'Menlo', 'Consolas', monospace;
+    font-size: 0.8rem;
+    line-height: 1.4;
+    background: var(--bg-primary);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    padding: 10px;
+    color: var(--text-primary);
+    resize: vertical;
+}
+
+.code-textarea:focus {
+    outline: none;
+    border-color: var(--primary-color);
+}
+
+/* ============================================
+   Tool Calling Popover Styles
+   ============================================ */
+
+.popover-content .tool-info-box {
+    font-size: 0.75rem;
+    padding: 8px 10px;
+    background: rgba(14, 165, 233, 0.1);
+    border-radius: 6px;
+    margin-bottom: 12px;
+    color: var(--text-secondary);
+}
+
+.popover-content .tool-info-box a {
+    color: var(--primary-color);
+}
+
+.popover-content .tool-choice-row {
+    display: flex;
+    align-items: flex-end;
+    gap: 8px;
+    margin-bottom: 12px;
+}
+
+.popover-content .tool-presets-row {
+    margin-bottom: 12px;
+}
+
+.popover-content .tool-presets-row label {
+    font-size: 0.75rem;
+    margin-bottom: 6px;
+}
+
+.popover-content .preset-buttons {
+    display: flex;
+    gap: 4px;
+    flex-wrap: wrap;
+}
+
+.popover-content .tools-list-container {
+    background: var(--bg-primary);
+    border-radius: 6px;
+    overflow: hidden;
+}
+
+.popover-content .tools-list-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 10px;
+    background: var(--bg-tertiary);
+    font-size: 0.75rem;
+    font-weight: 500;
+}
+
+.popover-content .tools-list-actions {
+    display: flex;
+    gap: 4px;
+}
+
+.popover-content .tools-list {
+    max-height: 120px;
+    overflow-y: auto;
+    padding: 8px;
+}
+
+.popover-content .tools-empty-state {
+    text-align: center;
+    padding: 16px;
+    color: var(--text-secondary);
+    font-size: 0.75rem;
+}
+
+/* MCP Placeholder in popover */
+.popover-content .mcp-placeholder {
+    text-align: center;
+    padding: 20px;
+}
+
+.popover-content .mcp-placeholder .placeholder-icon {
+    font-size: 2rem;
+    margin-bottom: 8px;
+}
+
+.popover-content .mcp-placeholder .placeholder-text p {
+    margin: 0 0 4px 0;
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+}
+
+.popover-content .mcp-placeholder .placeholder-subtext {
+    font-size: 0.75rem;
+    opacity: 0.7;
+}
+
+.popover-content .mcp-placeholder a {
+    color: var(--primary-color);
+    font-size: 0.8rem;
+}
+
+/* Coming soon badge */
+.popover-header .coming-soon-badge {
+    font-size: 0.65rem;
+    padding: 2px 6px;
+    background: var(--warning-color);
+    color: #000;
+    border-radius: 4px;
+    font-weight: 500;
+    margin-left: 8px;
+}
+
+/* ============================================
    Light Mode Specific Overrides - Modern & Polished
    ============================================ */
 
@@ -5158,6 +5766,120 @@ a, button, input, select, textarea, .btn, .nav-item, .panel, .card, .form-contro
 [data-theme="light"] .system-settings-content,
 [data-theme="light"] .mcp-content {
     border-top: 1px solid var(--border-color);
+}
+
+/* Chat Toolbar (Light Mode) */
+[data-theme="light"] .chat-toolbar {
+    border-top-color: var(--border-color);
+}
+
+[data-theme="light"] .toolbar-icon-btn:hover {
+    background: var(--hover-overlay);
+}
+
+[data-theme="light"] .toolbar-icon-btn.active::after {
+    background: var(--primary-color);
+}
+
+[data-theme="light"] .toolbar-tooltip {
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+[data-theme="light"] .toolbar-tooltip::after {
+    border-top-color: var(--bg-secondary);
+}
+
+[data-theme="light"] .toolbar-tooltip::before {
+    border-top-color: var(--border-color);
+}
+
+[data-theme="light"] .toolbar-right .message-templates {
+    background: var(--bg-secondary);
+    border-color: var(--border-color);
+    color: #64748b;
+}
+
+[data-theme="light"] .toolbar-right .message-templates:hover {
+    border-color: var(--primary-color);
+    color: var(--text-primary);
+}
+
+/* Inline Panels (Light Mode) */
+[data-theme="light"] .inline-panel {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+[data-theme="light"] .inline-panel-header {
+    background: var(--bg-tertiary);
+    border-bottom-color: var(--border-color);
+}
+
+[data-theme="light"] .popover-header {
+    background: var(--bg-tertiary);
+    border-bottom-color: var(--border-color);
+}
+
+[data-theme="light"] .popover-close:hover {
+    background: var(--hover-overlay);
+}
+
+[data-theme="light"] .popover-content .param-value-input {
+    background: var(--input-bg);
+    border-color: var(--border-color);
+}
+
+[data-theme="light"] .popover-content .system-prompt-input {
+    background: var(--input-bg);
+    border-color: var(--border-color);
+}
+
+[data-theme="light"] .output-type-btn {
+    background: var(--bg-secondary);
+    border-color: var(--border-color);
+    color: #64748b;
+}
+
+[data-theme="light"] .output-type-btn:hover {
+    border-color: var(--primary-color);
+    color: var(--primary-color);
+}
+
+[data-theme="light"] .output-type-btn.active {
+    background: var(--primary-color);
+    border-color: var(--primary-color);
+    color: white;
+}
+
+[data-theme="light"] .code-textarea {
+    background: var(--input-bg);
+    border-color: var(--border-color);
+}
+
+[data-theme="light"] .popover-content .tool-info-box {
+    background: rgba(14, 165, 233, 0.08);
+}
+
+[data-theme="light"] .popover-content .tools-list-container {
+    background: var(--input-bg);
+}
+
+[data-theme="light"] .popover-content .tools-list-header {
+    background: var(--bg-tertiary);
+}
+
+[data-theme="light"] .structured-preset-btn {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    color: var(--text-secondary);
+}
+
+[data-theme="light"] .structured-preset-btn:hover {
+    border-color: var(--primary-color);
+    color: var(--primary-color);
 }
 
 /* Mode Toggle Buttons */

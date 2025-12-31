@@ -7,17 +7,14 @@ A modern web interface for managing and interacting with vLLM servers (www.githu
 ### ✨ New UI Enhancements
 
 - **🎨 Modern Dark Theme**: Sleek, professional interface with improved visual hierarchy and contrast
-- **📊 Real-Time Response Metrics Panel**: Live display of prompt tokens, completion tokens, total tokens, time taken, and tokens/sec
-- **⚡ Throughput Monitoring**: Average prompt throughput and generation throughput metrics (tok/s)
-- **💾 GPU KV Cache Usage**: Real-time GPU KV cache utilization monitoring with warning indicators
-- **🎯 Prefix Cache Hit Rate**: Track prefix caching efficiency for optimized inference
-- **🌓 Dark/Light Mode Toggle**: Switch between dark and light themes with one click
-- **📋 Collapsible Sections**: Expandable panels for Chat Template Reference, System Settings, Tool Calling, and MCP Servers
-- **🖥️ Server Status Indicator**: Visual server status with uptime timer
-- **📝 Command Preview**: View and copy the exact vLLM command before execution
-- **💬 Enhanced Chat Interface**: Improved message bubbles with clear AI/User distinction
-- **📜 Server Logs Panel**: Auto-scrolling logs with save and clear controls
-- **⚡ Quick Messages Dropdown**: Pre-configured message templates for rapid testing
+- **💬 Streamlined Chat Interface**: Clean, distraction-free chat UI with inline expandable panels
+- **🔧 Icon Toolbar**: Compact icon bar for quick access to advanced features (ChatGPT-style)
+  - ⚙️ **Chat Settings**: Temperature and max tokens configuration
+  - 💬 **System Prompt**: Customizable with 8 preset templates (Helpful, Coder, Writer, Teacher, etc.)
+  - 🏗️ **Structured Outputs**: Constrain model responses to Choice, Regex, JSON Schema, or Grammar
+  - 🔧 **Tool Calling/Function Calling**: Define custom tools with parameters for function calling
+  - 🔗 **MCP Servers**: Model Context Protocol integration *(Coming Soon)*
+  - ➕ **RAG**: Retrieval-Augmented Generation support *(Coming Soon)*
 
 ## 📦 Quick Install via PyPI
 
@@ -403,7 +400,23 @@ nano config/vllm_cpu.env
 
 ## ✨ Features
 
-- **🐳 Container Orchestration**: Automatic vLLM container lifecycle management 🆕
+- **💬 Modern Chat Interface**: Streamlined, ChatGPT-style chat experience 🆕
+  - Clean, distraction-free interface with inline expandable panels
+  - Icon toolbar for quick access to advanced features
+  - System prompt templates (8 presets: Helpful, Coder, Writer, Teacher, etc.)
+  - Real-time response metrics and token counting
+- **🏗️ Structured Outputs**: Constrain model responses to specific formats 🆕
+  - **Choice**: Force output to one of specific values (sentiment, yes/no, etc.)
+  - **Regex**: Match output to regex patterns (email, phone, date formats)
+  - **JSON Schema**: Generate valid JSON matching your schema
+  - **Grammar (EBNF)**: Define complex output structures
+- **🔧 Tool Calling / Function Calling**: Define custom tools for the model 🆕
+  - Create tools with name, description, and parameters
+  - Preset tools (Weather, Calculator, Search)
+  - Parallel tool calls support
+- **🔗 MCP Server Integration**: Model Context Protocol support *(Coming Soon)* 🆕
+- **➕ RAG Support**: Retrieval-Augmented Generation *(Coming Soon)* 🆕
+- **🐳 Container Orchestration**: Automatic vLLM container lifecycle management
   - Local development: Podman-based orchestration
   - Enterprise deployment: Kubernetes API-based orchestration
   - Seamless switching between local and cloud environments

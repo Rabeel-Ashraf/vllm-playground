@@ -166,17 +166,33 @@ class VLLMWebUI {
             progressStatus: document.getElementById('progress-status'),
             progressPercent: document.getElementById('progress-percent'),
             
-            // System Settings elements
-            systemSettingsToggle: document.getElementById('system-settings-toggle'),
-            systemSettingsContent: document.getElementById('system-settings-content'),
+            // Toolbar Icon Buttons
+            toolbarSettings: document.getElementById('toolbar-settings'),
+            toolbarPrompt: document.getElementById('toolbar-prompt'),
+            toolbarStructured: document.getElementById('toolbar-structured'),
+            toolbarTools: document.getElementById('toolbar-tools'),
+            toolbarMcp: document.getElementById('toolbar-mcp'),
+            toolbarRag: document.getElementById('toolbar-rag'),
             
-            // Tool Calling elements
-            toolCallingToggle: document.getElementById('tool-calling-toggle'),
-            toolCallingContent: document.getElementById('tool-calling-content'),
+            // Inline Panels
+            panelSettings: document.getElementById('panel-settings'),
+            panelPrompt: document.getElementById('panel-prompt'),
+            panelStructured: document.getElementById('panel-structured'),
+            panelTools: document.getElementById('panel-tools'),
+            panelMcp: document.getElementById('panel-mcp'),
+            panelRag: document.getElementById('panel-rag'),
             
-            // MCP elements
-            mcpToggle: document.getElementById('mcp-toggle'),
-            mcpContent: document.getElementById('mcp-content'),
+            // Structured Outputs elements
+            structuredEnabled: document.getElementById('structured-enabled'),
+            structuredOptions: document.getElementById('structured-options'),
+            structuredChoices: document.getElementById('structured-choices'),
+            structuredRegex: document.getElementById('structured-regex'),
+            structuredJsonName: document.getElementById('structured-json-name'),
+            structuredJsonSchema: document.getElementById('structured-json-schema'),
+            structuredGrammar: document.getElementById('structured-grammar'),
+            
+            // Tools count
+            toolsCount: document.getElementById('tools-count'),
             
             // Theme toggle
             themeToggle: document.getElementById('theme-toggle'),
@@ -292,9 +308,9 @@ class VLLMWebUI {
             if (appContainer) appContainer.style.marginLeft = '60px';
         } else {
             sidebar.classList.remove('collapsed');
-            sidebar.style.width = '220px';
-            if (resizeHandle) resizeHandle.style.left = '220px';
-            if (appContainer) appContainer.style.marginLeft = '220px';
+            sidebar.style.width = '255px';
+            if (resizeHandle) resizeHandle.style.left = '255px';
+            if (appContainer) appContainer.style.marginLeft = '255px';
         }
     }
     
@@ -375,10 +391,10 @@ class VLLMWebUI {
         if (viewTitle) {
             switch (viewId) {
                 case 'vllm-server':
-                    viewTitle.innerHTML = '<img src="/assets/vllm_only.png" alt="vLLM" class="view-title-logo"> vLLM Server';
+                    viewTitle.innerHTML = '<img src="/assets/vllm-logo.svg" alt="vLLM" class="view-title-logo"> vLLM Server';
                     break;
                 case 'guidellm':
-                    viewTitle.innerHTML = '📊 GuideLLM Benchmark';
+                    viewTitle.innerHTML = '<img src="/assets/guidellm-logo.svg" alt="GuideLLM" class="view-title-logo"> GuideLLM Benchmark';
                     // Update benchmark server status
                     this.updateBenchmarkServerStatus();
                     break;
@@ -465,50 +481,11 @@ class VLLMWebUI {
     }
 
     initToolCalling() {
-        // Toggle System Settings section
-        if (this.elements.systemSettingsToggle) {
-            this.elements.systemSettingsToggle.addEventListener('click', () => {
-                const content = this.elements.systemSettingsContent;
-                const icon = this.elements.systemSettingsToggle.querySelector('.toggle-icon');
-                if (content.style.display === 'none') {
-                    content.style.display = 'block';
-                    icon.textContent = '▲';
-                } else {
-                    content.style.display = 'none';
-                    icon.textContent = '▼';
-                }
-            });
-        }
+        // Initialize popover system
+        this.initPopovers();
         
-        // Toggle tool calling section
-        if (this.elements.toolCallingToggle) {
-            this.elements.toolCallingToggle.addEventListener('click', () => {
-                const content = this.elements.toolCallingContent;
-                const icon = this.elements.toolCallingToggle.querySelector('.toggle-icon');
-                if (content.style.display === 'none') {
-                    content.style.display = 'block';
-                    icon.textContent = '▲';
-                } else {
-                    content.style.display = 'none';
-                    icon.textContent = '▼';
-                }
-            });
-        }
-        
-        // Toggle MCP section
-        if (this.elements.mcpToggle) {
-            this.elements.mcpToggle.addEventListener('click', () => {
-                const content = this.elements.mcpContent;
-                const icon = this.elements.mcpToggle.querySelector('.toggle-icon');
-                if (content.style.display === 'none') {
-                    content.style.display = 'block';
-                    icon.textContent = '▲';
-                } else {
-                    content.style.display = 'none';
-                    icon.textContent = '▼';
-                }
-            });
-        }
+        // Initialize structured outputs
+        this.initStructuredOutputs();
         
         // Add tool button
         if (this.elements.addToolBtn) {
@@ -552,6 +529,413 @@ class VLLMWebUI {
         
         // Initialize current parameters array for form
         this.currentParams = [];
+    }
+    
+    // ============ Inline Panels System ============
+    initPopovers() {
+        // Track which panels are open
+        this.openPanels = new Set();
+        
+        // Toolbar icon button click handlers - toggle their respective panels
+        const toolbarButtons = [
+            { btn: this.elements.toolbarSettings, panel: this.elements.panelSettings, id: 'settings' },
+            { btn: this.elements.toolbarPrompt, panel: this.elements.panelPrompt, id: 'prompt' },
+            { btn: this.elements.toolbarStructured, panel: this.elements.panelStructured, id: 'structured' },
+            { btn: this.elements.toolbarTools, panel: this.elements.panelTools, id: 'tools' },
+            { btn: this.elements.toolbarMcp, panel: this.elements.panelMcp, id: 'mcp' },
+            { btn: this.elements.toolbarRag, panel: this.elements.panelRag, id: 'rag' }
+        ];
+        
+        toolbarButtons.forEach(({ btn, panel, id }) => {
+            if (btn && panel) {
+                btn.addEventListener('click', () => {
+                    this.togglePanel(id, btn, panel);
+                });
+            }
+        });
+        
+        // Close button handlers for all panels
+        document.querySelectorAll('.inline-panel-close').forEach(closeBtn => {
+            closeBtn.addEventListener('click', () => {
+                const panelId = closeBtn.dataset.panel;
+                if (panelId) {
+                    this.closePanel(panelId);
+                }
+            });
+        });
+        
+        // Temperature and max tokens sync (slider <-> input)
+        const tempSlider = this.elements.temperature;
+        const tempInput = document.getElementById('temp-value');
+        const tokensSlider = this.elements.maxTokens;
+        const tokensInput = document.getElementById('tokens-value');
+        
+        if (tempSlider && tempInput) {
+            tempSlider.addEventListener('input', () => {
+                tempInput.value = tempSlider.value;
+            });
+            tempInput.addEventListener('input', () => {
+                tempSlider.value = tempInput.value;
+            });
+        }
+        
+        if (tokensSlider && tokensInput) {
+            tokensSlider.addEventListener('input', () => {
+                tokensInput.value = tokensSlider.value;
+            });
+            tokensInput.addEventListener('input', () => {
+                tokensSlider.value = tokensInput.value;
+            });
+        }
+        
+        // Clear system prompt button
+        const clearPromptBtn = document.getElementById('clear-system-prompt-btn');
+        if (clearPromptBtn) {
+            clearPromptBtn.addEventListener('click', () => {
+                if (this.elements.systemPrompt) {
+                    this.elements.systemPrompt.value = '';
+                    this.updateModifiedIndicators();
+                }
+            });
+        }
+        
+        // System prompt template selector
+        const promptTemplateSelect = document.getElementById('system-prompt-template');
+        if (promptTemplateSelect) {
+            promptTemplateSelect.addEventListener('change', () => {
+                const template = promptTemplateSelect.value;
+                if (template && this.elements.systemPrompt) {
+                    this.elements.systemPrompt.value = this.getSystemPromptTemplate(template);
+                    this.updateModifiedIndicators();
+                }
+                promptTemplateSelect.value = ''; // Reset to show "Templates"
+            });
+        }
+        
+        // Add change listeners to all settings inputs for real-time indicator updates
+        const settingsPanel = document.getElementById('panel-settings');
+        if (settingsPanel) {
+            settingsPanel.querySelectorAll('input, select').forEach(input => {
+                input.addEventListener('change', () => this.updateModifiedIndicators());
+            });
+        }
+        
+        // System prompt text change
+        if (this.elements.systemPrompt) {
+            this.elements.systemPrompt.addEventListener('input', () => this.updateModifiedIndicators());
+        }
+    }
+    
+    getSystemPromptTemplate(type) {
+        const templates = {
+            default: "You are a helpful assistant.",
+            helpful: "You are a helpful, harmless, and honest AI assistant. You provide accurate, thoughtful responses while being transparent about your limitations. If you're unsure about something, you say so.",
+            coder: "You are an expert software engineer and coding assistant. You write clean, efficient, well-documented code. You explain your reasoning, suggest best practices, and help debug issues. You're familiar with multiple programming languages and frameworks.",
+            writer: "You are a creative writing assistant with a flair for storytelling. You help craft engaging narratives, develop compelling characters, and refine prose. You adapt your style to match the user's vision while offering constructive suggestions.",
+            teacher: "You are a patient and knowledgeable teacher. You explain concepts clearly, break down complex topics into understandable parts, and use examples and analogies. You encourage questions and adapt your teaching style to the learner's level.",
+            translator: "You are a professional translator fluent in multiple languages. You provide accurate translations while preserving meaning, tone, and cultural nuances. You can explain idioms and suggest alternative phrasings when needed.",
+            analyst: "You are a data analyst and business intelligence expert. You help interpret data, identify trends, create insights, and explain statistical concepts. You present findings clearly and suggest actionable recommendations.",
+            concise: "You are a concise assistant. You provide brief, direct answers without unnecessary elaboration. You get straight to the point while remaining helpful and accurate."
+        };
+        return templates[type] || '';
+    }
+    
+    togglePanel(id, btnEl, panelEl) {
+        if (this.openPanels.has(id)) {
+            // Close if already open
+            this.closePanel(id);
+        } else {
+            // Close all other panels first (only one at a time)
+            this.closeAllPanels();
+            // Open the panel
+            panelEl.style.display = 'block';
+            btnEl.classList.add('active');
+            this.openPanels.add(id);
+        }
+    }
+    
+    closePanel(id) {
+        const panel = document.getElementById(`panel-${id}`);
+        const btn = document.getElementById(`toolbar-${id}`);
+        if (panel) panel.style.display = 'none';
+        if (btn) btn.classList.remove('active');
+        this.openPanels.delete(id);
+        // Update modified indicators when panel closes
+        this.updateModifiedIndicators();
+    }
+    
+    closeAllPanels() {
+        const panels = ['settings', 'prompt', 'structured', 'tools', 'mcp', 'rag'];
+        panels.forEach(id => this.closePanel(id));
+    }
+    
+    // Check if any settings are modified from defaults and show indicator dots
+    updateModifiedIndicators() {
+        // Default values - only track key settings to avoid false positives
+        const defaults = {
+            temperature: 0.7,
+            maxTokens: 256
+        };
+        const defaultSystemPrompt = "You are a helpful assistant.";
+        
+        // Settings panel - only check temperature and max tokens
+        const settingsBtn = document.getElementById('toolbar-settings');
+        if (settingsBtn) {
+            const temp = parseFloat(this.elements.temperature?.value) || 0.7;
+            const maxTokens = parseInt(this.elements.maxTokens?.value) || 256;
+            
+            const isModified = (
+                Math.abs(temp - defaults.temperature) > 0.01 ||
+                maxTokens !== defaults.maxTokens
+            );
+            settingsBtn.classList.toggle('modified', isModified);
+        }
+        
+        // System prompt - check if text differs from default (empty is also considered modified)
+        const promptBtn = document.getElementById('toolbar-prompt');
+        if (promptBtn) {
+            const currentPrompt = (this.elements.systemPrompt?.value?.trim() || '');
+            const isModified = currentPrompt !== defaultSystemPrompt;
+            promptBtn.classList.toggle('modified', isModified);
+        }
+        
+        // Structured outputs - check if enabled
+        const structuredBtn = document.getElementById('toolbar-structured');
+        if (structuredBtn) {
+            const isEnabled = this.elements.structuredEnabled?.checked || false;
+            structuredBtn.classList.toggle('modified', isEnabled);
+        }
+        
+        // Tool calling - check if any tools are defined
+        const toolsBtn = document.getElementById('toolbar-tools');
+        if (toolsBtn) {
+            const hasTools = (this.tools?.length || 0) > 0;
+            toolsBtn.classList.toggle('modified', hasTools);
+        }
+        
+        // MCP - check if any servers are configured
+        const mcpBtn = document.getElementById('toolbar-mcp');
+        if (mcpBtn) {
+            const hasMcpServers = (this.mcpServers?.length || 0) > 0;
+            mcpBtn.classList.toggle('modified', hasMcpServers);
+        }
+    }
+    
+    updateToolsBadge() {
+        const count = this.tools ? this.tools.length : 0;
+        if (this.elements.toolsCount) {
+            this.elements.toolsCount.textContent = count;
+        }
+    }
+    
+    updateStructuredBadge() {
+        if (this.elements.structuredBadge) {
+            if (this.elements.structuredEnabled && this.elements.structuredEnabled.checked) {
+                const type = this.structuredOutputType ? this.structuredOutputType.charAt(0).toUpperCase() + this.structuredOutputType.slice(1) : 'On';
+                this.elements.structuredBadge.textContent = `Structured Output: ${type}`;
+            } else {
+                this.elements.structuredBadge.textContent = 'Structured Outputs: Off';
+            }
+        }
+    }
+    
+    // ============ Structured Outputs ============
+    initStructuredOutputs() {
+        this.structuredOutputType = 'choice';
+        this.structuredOutputConfig = {
+            enabled: false,
+            type: 'choice',
+            choices: [],
+            regex: '',
+            jsonSchema: null,
+            jsonSchemaName: 'response',
+            grammar: ''
+        };
+        
+        // Enable/disable toggle
+        if (this.elements.structuredEnabled) {
+            this.elements.structuredEnabled.addEventListener('change', () => {
+                const enabled = this.elements.structuredEnabled.checked;
+                const optionsEl = document.getElementById('structured-options');
+                if (optionsEl) {
+                    optionsEl.style.display = enabled ? 'block' : 'none';
+                }
+                this.structuredOutputConfig.enabled = enabled;
+                this.updateStructuredBadge();
+                this.updateModifiedIndicators();
+            });
+        }
+        
+        // Output type buttons
+        document.querySelectorAll('.output-type-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                // Update active button
+                document.querySelectorAll('.output-type-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                
+                const type = btn.dataset.type;
+                this.structuredOutputType = type;
+                this.structuredOutputConfig.type = type;
+                
+                // Show/hide config sections
+                document.querySelectorAll('.structured-config').forEach(config => {
+                    config.style.display = 'none';
+                });
+                const configEl = document.getElementById(`structured-${type}-config`);
+                if (configEl) {
+                    configEl.style.display = 'block';
+                }
+                
+                this.updateStructuredBadge();
+            });
+        });
+        
+        // Structured output presets
+        document.querySelectorAll('.structured-preset-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                this.loadStructuredPreset(btn.dataset.preset);
+            });
+        });
+    }
+    
+    loadStructuredPreset(preset) {
+        const presets = {
+            // Choice presets
+            sentiment: { type: 'choice', value: 'positive, negative, neutral' },
+            yesno: { type: 'choice', value: 'yes, no' },
+            rating: { type: 'choice', value: '1, 2, 3, 4, 5' },
+            
+            // Regex presets
+            email: { type: 'regex', value: '\\w+@\\w+\\.\\w+' },
+            phone: { type: 'regex', value: '\\d{3}-\\d{3}-\\d{4}' },
+            date: { type: 'regex', value: '\\d{4}-\\d{2}-\\d{2}' },
+            
+            // JSON Schema presets
+            person: {
+                type: 'json',
+                name: 'person',
+                value: JSON.stringify({
+                    type: 'object',
+                    properties: {
+                        name: { type: 'string', description: 'The person\'s name' },
+                        age: { type: 'integer', description: 'The person\'s age' },
+                        email: { type: 'string', description: 'Email address' }
+                    },
+                    required: ['name']
+                }, null, 2)
+            },
+            product: {
+                type: 'json',
+                name: 'product',
+                value: JSON.stringify({
+                    type: 'object',
+                    properties: {
+                        name: { type: 'string' },
+                        price: { type: 'number' },
+                        category: { type: 'string' },
+                        in_stock: { type: 'boolean' }
+                    },
+                    required: ['name', 'price']
+                }, null, 2)
+            },
+            api: {
+                type: 'json',
+                name: 'api_response',
+                value: JSON.stringify({
+                    type: 'object',
+                    properties: {
+                        success: { type: 'boolean' },
+                        data: { type: 'object' },
+                        message: { type: 'string' }
+                    },
+                    required: ['success']
+                }, null, 2)
+            },
+            
+            // Grammar presets
+            sql: {
+                type: 'grammar',
+                value: `root ::= select_statement
+select_statement ::= "SELECT " column " FROM " table " WHERE " condition
+column ::= "id" | "name" | "email" | "*"
+table ::= "users" | "products" | "orders"
+condition ::= column " = " value
+value ::= "'" [a-zA-Z0-9]+ "'" | [0-9]+`
+            },
+            arithmetic: {
+                type: 'grammar',
+                value: `root ::= expression
+expression ::= term (("+" | "-") term)*
+term ::= factor (("*" | "/") factor)*
+factor ::= number | "(" expression ")"
+number ::= [0-9]+`
+            }
+        };
+        
+        const p = presets[preset];
+        if (!p) return;
+        
+        if (p.type === 'choice' && this.elements.structuredChoices) {
+            this.elements.structuredChoices.value = p.value;
+        } else if (p.type === 'regex' && this.elements.structuredRegex) {
+            this.elements.structuredRegex.value = p.value;
+        } else if (p.type === 'json') {
+            if (this.elements.structuredJsonName) this.elements.structuredJsonName.value = p.name;
+            if (this.elements.structuredJsonSchema) this.elements.structuredJsonSchema.value = p.value;
+        } else if (p.type === 'grammar' && this.elements.structuredGrammar) {
+            this.elements.structuredGrammar.value = p.value;
+        }
+    }
+    
+    getStructuredOutputsForRequest() {
+        if (!this.structuredOutputConfig.enabled) {
+            return null;
+        }
+        
+        const type = this.structuredOutputConfig.type;
+        
+        if (type === 'choice') {
+            const choicesStr = this.elements.structuredChoices?.value || '';
+            const choices = choicesStr.split(',').map(c => c.trim()).filter(c => c);
+            if (choices.length === 0) return null;
+            return { structured_outputs: { choice: choices } };
+        }
+        
+        if (type === 'regex') {
+            const regex = this.elements.structuredRegex?.value?.trim();
+            if (!regex) return null;
+            return { structured_outputs: { regex: regex } };
+        }
+        
+        if (type === 'json') {
+            const schemaStr = this.elements.structuredJsonSchema?.value?.trim();
+            const schemaName = this.elements.structuredJsonName?.value?.trim() || 'response';
+            if (!schemaStr) return null;
+            try {
+                const schema = JSON.parse(schemaStr);
+                return {
+                    response_format: {
+                        type: 'json_schema',
+                        json_schema: {
+                            name: schemaName,
+                            schema: schema
+                        }
+                    }
+                };
+            } catch (e) {
+                console.error('Invalid JSON schema:', e);
+                this.showNotification('Invalid JSON schema', 'error');
+                return null;
+            }
+        }
+        
+        if (type === 'grammar') {
+            const grammar = this.elements.structuredGrammar?.value?.trim();
+            if (!grammar) return null;
+            return { structured_outputs: { grammar: grammar } };
+        }
+        
+        return null;
     }
 
     attachListeners() {
@@ -615,8 +999,13 @@ class VLLMWebUI {
         // Chat
         this.elements.sendBtn.addEventListener('click', () => this.sendMessage());
         this.elements.chatInput.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
-                this.sendMessage();
+            if (e.key === 'Enter' && !e.shiftKey) {
+                // Enter sends message, Shift+Enter for new line
+                // Only send if server is ready
+                if (this.serverReady && this.serverRunning) {
+                    e.preventDefault();
+                    this.sendMessage();
+                }
             }
         });
         this.elements.clearChatBtn.addEventListener('click', () => this.clearChat());
@@ -1608,6 +1997,13 @@ class VLLMWebUI {
                 if (toolsConfig.parallel_tool_calls !== null) {
                     requestBody.parallel_tool_calls = toolsConfig.parallel_tool_calls;
                 }
+            }
+            
+            // Add structured outputs if configured
+            const structuredConfig = this.getStructuredOutputsForRequest();
+            if (structuredConfig) {
+                Object.assign(requestBody, structuredConfig);
+                console.log('Structured outputs enabled:', structuredConfig);
             }
             
             // Use streaming
@@ -4574,15 +4970,21 @@ class VLLMWebUI {
     }
     
     updateToolsCountBadge() {
+        // Update old badge (if still present)
         const badge = this.elements.toolsCountBadge;
-        if (!badge) return;
-        
-        if (this.tools.length > 0) {
-            badge.textContent = `${this.tools.length} tool${this.tools.length > 1 ? 's' : ''}`;
-            badge.style.display = 'inline-block';
-        } else {
-            badge.style.display = 'none';
+        if (badge) {
+            if (this.tools.length > 0) {
+                badge.textContent = `${this.tools.length} tool${this.tools.length > 1 ? 's' : ''}`;
+                badge.style.display = 'inline-block';
+            } else {
+                badge.style.display = 'none';
+            }
         }
+        
+        // Update new toolbar badge
+        this.updateToolsBadge();
+        // Update modified indicators
+        this.updateModifiedIndicators();
     }
     
     async loadToolPreset(presetName) {

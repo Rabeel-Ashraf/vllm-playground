@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>vLLM Playground - Server Management & Chat Interface</title>
+    <title>vLLM-Playground - Server Management & Chat Interface</title>
     <link rel="icon" type="image/png" href="/assets/vllm_only.png">
     <link rel="stylesheet" href="/static/css/style.css">
 </head>
@@ -12,17 +12,17 @@
         <!-- Left Navigation Sidebar -->
         <nav class="nav-sidebar" id="nav-sidebar">
             <div class="nav-brand">
-                <img src="/assets/vllm_only.png" alt="vLLM Playground" class="nav-logo" onerror="this.style.display='none'">
-                <span class="nav-title">vLLM Playground</span>
+                <img src="/assets/vllm-logo.svg" alt="vLLM-Playground" class="nav-logo" onerror="this.style.display='none'">
+                <span class="nav-title">vLLM-Playground</span>
             </div>
             
             <div class="nav-items">
                 <button class="nav-item active" data-view="vllm-server" title="vLLM Server">
-                    <img src="/assets/vllm_only.png" alt="" class="nav-item-logo" onerror="this.style.display='none'">
+                    <img src="/assets/vllm-logo.svg" alt="" class="nav-item-logo" onerror="this.style.display='none'">
                     <span class="nav-label">vLLM Server</span>
                 </button>
                 <button class="nav-item" data-view="guidellm" title="GuideLLM Benchmark">
-                    <span class="nav-icon">📊</span>
+                    <img src="/assets/guidellm-logo.svg" alt="" class="nav-item-logo" onerror="this.style.display='none'">
                     <span class="nav-label">GuideLLM</span>
                 </button>
             </div>
@@ -47,7 +47,7 @@
             <header class="app-header">
                 <div class="header-content">
                     <div class="header-title">
-                        <h1 id="view-title"><img src="/assets/vllm_only.png" alt="vLLM" class="view-title-logo"> vLLM Server</h1>
+                        <h1 id="view-title"><img src="/assets/vllm-logo.svg" alt="vLLM" class="view-title-logo"> vLLM Server</h1>
                     </div>
                     <div class="header-right">
                         <div class="status-indicator">
@@ -355,219 +355,236 @@
                             </div>
 
                             <div class="chat-input-area">
-                                <!-- System Settings Section (Collapsible) -->
-                                <div class="system-settings-section">
-                                    <div class="system-settings-header" id="system-settings-toggle">
-                                        <h3>⚙️ System Settings</h3>
-                                        <div class="settings-header-controls">
-                                            <span class="toggle-icon">▼</span>
-                                        </div>
-                                    </div>
-                                    <div class="system-settings-content" id="system-settings-content" style="display: none;">
-                                        <!-- System Prompt -->
-                                        <div class="system-prompt-section">
-                                            <div class="system-prompt-header">
-                                                <label for="system-prompt">System Prompt:</label>
-                                                <button id="clear-system-prompt-btn" class="btn btn-secondary btn-sm" title="Clear system prompt">Clear</button>
-                                            </div>
-                                            <textarea id="system-prompt" class="system-prompt-input" rows="2" placeholder="Set system prompt (e.g., 'You are a helpful coding assistant')">You are a helpful assistant.</textarea>
-                                            <small class="form-help">💡 System prompt is sent with every message to set the assistant's behavior.</small>
-                                        </div>
-                                        
-                                        <div class="generation-params">
-                                            <div class="param-group">
-                                                <label for="temperature">Temperature: <input type="number" id="temp-value" class="param-value-input" min="0" max="1" step="0.05" value="0.7"></label>
-                                                <input type="range" id="temperature" min="0" max="1" step="0.05" value="0.7">
-                                            </div>
-                                            <div class="param-group">
-                                                <label for="max-tokens">Max Tokens: <input type="number" id="tokens-value" class="param-value-input" min="1" max="4096" step="1" value="256"></label>
-                                                <input type="range" id="max-tokens" min="1" max="4096" step="1" value="256">
-                                            </div>
-                                        </div>
-                                    </div>
+                                <!-- Main Input Group -->
+                                <div class="input-group">
+                                    <textarea id="chat-input" class="chat-input" placeholder="Type your message here..." rows="1"></textarea>
+                                    <button id="send-btn" class="btn btn-primary" disabled>Send</button>
                                 </div>
                                 
-                                <!-- Tool Calling Section -->
-                                <div class="tool-calling-section">
-                                    <div class="tool-calling-header" id="tool-calling-toggle">
-                                        <h3>🔧 Tool Calling (Function Calling)</h3>
-                                        <div class="tool-header-controls">
-                                            <span id="tools-count-badge" class="tools-count-badge" style="display: none;">0 tools</span>
-                                            <span class="toggle-icon">▼</span>
+                                <!-- Inline Expandable Panels -->
+                                <div class="inline-panels">
+                                    <!-- System Settings Panel -->
+                                    <div class="inline-panel" id="panel-settings" style="display: none;">
+                                        <div class="inline-panel-header">
+                                            <span class="inline-panel-title"><span class="panel-icon icon-settings"></span> Chat Settings</span>
+                                            <button class="inline-panel-close" data-panel="settings">✕</button>
+                                        </div>
+                                        <div class="inline-panel-content">
+                                            <div class="param-row">
+                                                <div class="param-group">
+                                                    <label>Temperature: <input type="number" id="temp-value" class="param-value-input" min="0" max="2" step="0.05" value="0.7"></label>
+                                                    <input type="range" id="temperature" min="0" max="2" step="0.05" value="0.7">
+                                                    <small class="form-help">Lower = focused, Higher = creative</small>
+                                                </div>
+                                                <div class="param-group">
+                                                    <label>Max Tokens: <input type="number" id="tokens-value" class="param-value-input" min="1" max="4096" step="1" value="256"></label>
+                                                    <input type="range" id="max-tokens" min="1" max="4096" step="1" value="256">
+                                                    <small class="form-help">Maximum response length</small>
+                                                </div>
+                                            </div>
                                         </div>
                                     </div>
-                                    <div class="tool-calling-content" id="tool-calling-content" style="display: none;">
-                                        <div class="tool-info-box">
-                                            <strong>ℹ️ Function Calling:</strong> Define tools that the model can call. The model will decide when to use them based on the conversation.
-                                            <a href="https://platform.openai.com/docs/guides/function-calling" target="_blank" style="color: #60a5fa;">Learn more</a>
+                                    
+                                    <!-- System Prompt Panel -->
+                                    <div class="inline-panel" id="panel-prompt" style="display: none;">
+                                        <div class="inline-panel-header">
+                                            <span class="inline-panel-title"><span class="panel-icon icon-prompt"></span> System Prompt</span>
+                                            <button class="inline-panel-close" data-panel="prompt">✕</button>
                                         </div>
-                                        
-                                        <!-- Tool Choice Selection -->
-                                        <div class="tool-choice-row">
-                                            <div class="form-group" style="flex: 1;">
-                                                <label for="tool-choice">Tool Choice:</label>
-                                                <select id="tool-choice" class="form-control">
-                                                    <option value="">None (disabled)</option>
-                                                    <option value="auto">Auto (model decides)</option>
-                                                    <option value="required">Required (must use tool)</option>
-                                                    <option value="none">None (no tools this request)</option>
+                                        <div class="inline-panel-content panel-grid">
+                                            <textarea id="system-prompt" class="system-prompt-input" rows="3" placeholder="Set system prompt (e.g., 'You are a helpful coding assistant')">You are a helpful assistant.</textarea>
+                                            <div class="panel-btn-stack">
+                                                <button id="clear-system-prompt-btn" class="btn btn-secondary">Clear</button>
+                                                <select id="system-prompt-template" class="btn btn-secondary">
+                                                    <option value="">Templates ▼</option>
+                                                    <option value="default">Default</option>
+                                                    <option value="helpful">Helpful Assistant</option>
+                                                    <option value="coder">Code Assistant</option>
+                                                    <option value="writer">Creative Writer</option>
+                                                    <option value="teacher">Teacher</option>
+                                                    <option value="translator">Translator</option>
+                                                    <option value="analyst">Data Analyst</option>
+                                                    <option value="concise">Concise</option>
                                                 </select>
                                             </div>
-                                            <div class="form-group checkbox-group" style="margin-left: 15px; display: flex; align-items: center;">
-                                                <label style="display: flex; align-items: center; gap: 6px;">
-                                                    <input type="checkbox" id="parallel-tool-calls">
-                                                    <span>Parallel Calls</span>
-                                                </label>
-                                            </div>
-                                        </div>
-                                        
-                                        <!-- Tool Presets -->
-                                        <div class="tool-presets-row">
-                                            <label>Load Preset:</label>
-                                            <div class="preset-buttons">
-                                                <button class="btn btn-secondary btn-xs tool-preset-btn" data-preset="weather">🌤️ Weather</button>
-                                                <button class="btn btn-secondary btn-xs tool-preset-btn" data-preset="calculator">🔢 Calculator</button>
-                                                <button class="btn btn-secondary btn-xs tool-preset-btn" data-preset="search">🔍 Search</button>
-                                                <button class="btn btn-secondary btn-xs tool-preset-btn" data-preset="code_execution">💻 Code</button>
-                                                <button class="btn btn-secondary btn-xs tool-preset-btn" data-preset="database">🗄️ Database</button>
-                                            </div>
-                                        </div>
-                                        
-                                        <!-- Tools List -->
-                                        <div class="tools-list-container">
-                                            <div class="tools-list-header">
-                                                <span>Defined Tools</span>
-                                                <div class="tools-list-actions">
-                                                    <button id="add-tool-btn" class="btn btn-primary btn-xs">+ Add Tool</button>
-                                                    <button id="clear-tools-btn" class="btn btn-secondary btn-xs">Clear All</button>
-                                                </div>
-                                            </div>
-                                            <div id="tools-list" class="tools-list">
-                                                <div class="tools-empty-state">
-                                                    <span>No tools defined. Click "Add Tool" or load a preset to get started.</span>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        
-                                        <!-- Tool Editor Modal -->
-                                        <div id="tool-editor-modal" class="tool-editor-modal" style="display: none;">
-                                            <div class="tool-editor-content">
-                                                <div class="tool-editor-header">
-                                                    <h4 id="tool-editor-title">Add New Tool</h4>
-                                                    <button id="tool-editor-close" class="modal-close-btn" title="Close">✕</button>
-                                                </div>
-                                                <div class="tool-editor-body">
-                                                    <!-- Function Name -->
-                                                    <div class="form-group">
-                                                        <label for="tool-name">
-                                                            <span>Function Name</span>
-                                                            <span class="required">*</span>
-                                                        </label>
-                                                        <input type="text" id="tool-name" class="form-control" placeholder="e.g., get_weather" spellcheck="false" autocomplete="off">
-                                                        <small class="form-help">Use snake_case (letters, numbers, underscores)</small>
-                                                    </div>
-                                                    
-                                                    <!-- Description -->
-                                                    <div class="form-group">
-                                                        <label for="tool-description">
-                                                            <span>Description</span>
-                                                            <span class="required">*</span>
-                                                        </label>
-                                                        <textarea id="tool-description" class="form-control" rows="2" placeholder="What does this function do?"></textarea>
-                                                        <small class="form-help">Help the model understand when to use this tool</small>
-                                                    </div>
-                                                    
-                                                    <!-- Parameters Section -->
-                                                    <div class="form-group">
-                                                        <div class="params-header">
-                                                            <label>
-                                                                <span>Parameters</span>
-                                                                <span class="param-count" id="param-count">(0)</span>
-                                                            </label>
-                                                            <button type="button" id="add-param-btn" class="btn btn-secondary btn-xs">+ Add Parameter</button>
-                                                        </div>
-                                                        
-                                                        <div id="params-list" class="params-list">
-                                                            <div class="params-empty">
-                                                                No parameters defined. Click "Add Parameter" to add one.
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                                <div class="tool-editor-footer">
-                                                    <button id="tool-editor-cancel" class="btn btn-secondary">Cancel</button>
-                                                    <button id="tool-editor-save" class="btn btn-primary">💾 Save Tool</button>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        
-                                        <!-- Parameter Editor Template (hidden) -->
-                                        <template id="param-template">
-                                            <div class="param-item" data-param-index="">
-                                                <div class="param-item-header">
-                                                    <div class="param-required-toggle">
-                                                        <input type="checkbox" class="param-required" title="Required parameter">
-                                                        <span class="required-label">Required</span>
-                                                    </div>
-                                                    <button type="button" class="param-delete-btn" title="Remove parameter">✕</button>
-                                                </div>
-                                                <div class="param-row">
-                                                    <div class="param-field param-name-field">
-                                                        <label>Name</label>
-                                                        <input type="text" class="form-control param-name" placeholder="param_name" spellcheck="false">
-                                                    </div>
-                                                    <div class="param-field param-type-field">
-                                                        <label>Type</label>
-                                                        <select class="form-control param-type">
-                                                            <option value="string">String</option>
-                                                            <option value="number">Number</option>
-                                                            <option value="integer">Integer</option>
-                                                            <option value="boolean">Boolean</option>
-                                                            <option value="array">Array</option>
-                                                        </select>
-                                                    </div>
-                                                </div>
-                                                <div class="param-field">
-                                                    <label>Description</label>
-                                                    <input type="text" class="form-control param-description" placeholder="What is this parameter for?">
-                                                </div>
-                                                <div class="param-field param-enum-field" style="display: none;">
-                                                    <label>Allowed Values <span class="optional">(comma-separated)</span></label>
-                                                    <input type="text" class="form-control param-enum" placeholder="e.g., celsius, fahrenheit">
-                                                </div>
-                                            </div>
-                                        </template>
-                                    </div>
-                                </div>
-                                
-                                <!-- MCP Servers Section (Placeholder) -->
-                                <div class="mcp-section">
-                                    <div class="mcp-header" id="mcp-toggle">
-                                        <h3>🔌 MCP Servers <span class="coming-soon-badge">Coming Soon</span></h3>
-                                        <div class="mcp-header-controls">
-                                            <span class="mcp-status-badge" id="mcp-status-badge" style="display: none;">0 connected</span>
-                                            <span class="toggle-icon">▼</span>
+                                            <small class="form-help panel-grid-full">Sent with every message to set behavior</small>
                                         </div>
                                     </div>
-                                    <div class="mcp-content" id="mcp-content" style="display: none;">
-                                        <div class="mcp-info-box">
-                                            <strong>🚧 Coming Soon:</strong> Connect to MCP (Model Context Protocol) servers to enable external tools, data sources, and integrations.
-                                            <a href="https://modelcontextprotocol.io/" target="_blank" style="color: #60a5fa;">Learn more about MCP</a>
+                                    
+                                    <!-- Structured Outputs Panel -->
+                                    <div class="inline-panel" id="panel-structured" style="display: none;">
+                                        <div class="inline-panel-header">
+                                            <span class="inline-panel-title"><span class="panel-icon icon-structured"></span> Structured Outputs</span>
+                                            <button class="inline-panel-close" data-panel="structured">✕</button>
                                         </div>
-                                        
-                                        <div class="mcp-placeholder">
-                                            <div class="placeholder-icon">🔌</div>
-                                            <div class="placeholder-text">
+                                        <div class="inline-panel-content inline-panel-scrollable">
+                                            <div class="form-group checkbox-group">
+                                                <label><input type="checkbox" id="structured-enabled"><span>Enable Structured Outputs</span></label>
+                                            </div>
+                                            <div id="structured-options" style="display: none;">
+                                                <div class="form-group">
+                                                    <label>Output Type:</label>
+                                                    <div class="output-type-buttons">
+                                                        <button class="output-type-btn active" data-type="choice">Choice</button>
+                                                        <button class="output-type-btn" data-type="regex">Regex</button>
+                                                        <button class="output-type-btn" data-type="json">JSON</button>
+                                                        <button class="output-type-btn" data-type="grammar">Grammar</button>
+                                                    </div>
+                                                </div>
+                                                <div id="structured-choice-config" class="structured-config">
+                                                    <div class="form-group">
+                                                        <label>Choices (comma-separated):</label>
+                                                        <input type="text" id="structured-choices" class="form-control" placeholder="positive, negative, neutral">
+                                                    </div>
+                                                    <div class="preset-buttons">
+                                                        <button class="btn btn-secondary btn-xs structured-preset-btn" data-preset="sentiment">Sentiment</button>
+                                                        <button class="btn btn-secondary btn-xs structured-preset-btn" data-preset="yesno">Yes/No</button>
+                                                        <button class="btn btn-secondary btn-xs structured-preset-btn" data-preset="rating">Rating</button>
+                                                    </div>
+                                                </div>
+                                                <div id="structured-regex-config" class="structured-config" style="display: none;">
+                                                    <div class="form-group">
+                                                        <label>Regex Pattern:</label>
+                                                        <input type="text" id="structured-regex" class="form-control" placeholder="\w+@\w+\.com">
+                                                    </div>
+                                                    <div class="preset-buttons">
+                                                        <button class="btn btn-secondary btn-xs structured-preset-btn" data-preset="email">Email</button>
+                                                        <button class="btn btn-secondary btn-xs structured-preset-btn" data-preset="phone">Phone</button>
+                                                        <button class="btn btn-secondary btn-xs structured-preset-btn" data-preset="date">Date</button>
+                                                    </div>
+                                                </div>
+                                                <div id="structured-json-config" class="structured-config" style="display: none;">
+                                                    <div class="form-group">
+                                                        <label>Schema Name:</label>
+                                                        <input type="text" id="structured-json-name" class="form-control" placeholder="response">
+                                                    </div>
+                                                    <div class="form-group">
+                                                        <label>JSON Schema:</label>
+                                                        <textarea id="structured-json-schema" class="form-control code-textarea" rows="4" placeholder='{"type": "object", "properties": {...}}'></textarea>
+                                                    </div>
+                                                    <div class="preset-buttons">
+                                                        <button class="btn btn-secondary btn-xs structured-preset-btn" data-preset="person">Person</button>
+                                                        <button class="btn btn-secondary btn-xs structured-preset-btn" data-preset="product">Product</button>
+                                                        <button class="btn btn-secondary btn-xs structured-preset-btn" data-preset="api">API</button>
+                                                    </div>
+                                                </div>
+                                                <div id="structured-grammar-config" class="structured-config" style="display: none;">
+                                                    <div class="form-group">
+                                                        <label>EBNF Grammar:</label>
+                                                        <textarea id="structured-grammar" class="form-control code-textarea" rows="4" placeholder="root ::= expression..."></textarea>
+                                                    </div>
+                                                    <div class="preset-buttons">
+                                                        <button class="btn btn-secondary btn-xs structured-preset-btn" data-preset="sql">SQL</button>
+                                                        <button class="btn btn-secondary btn-xs structured-preset-btn" data-preset="arithmetic">Math</button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Tool Calling Panel -->
+                                    <div class="inline-panel" id="panel-tools" style="display: none;">
+                                        <div class="inline-panel-header">
+                                            <span class="inline-panel-title"><span class="panel-icon icon-tools"></span> Tool Calling</span>
+                                            <button class="inline-panel-close" data-panel="tools">✕</button>
+                                        </div>
+                                        <div class="inline-panel-content inline-panel-scrollable">
+                                            <div class="tool-choice-row">
+                                                <div class="form-group" style="flex: 1;">
+                                                    <label>Tool Choice:</label>
+                                                    <select id="tool-choice" class="form-control">
+                                                        <option value="">None (disabled)</option>
+                                                        <option value="auto">Auto (model decides)</option>
+                                                        <option value="required">Required (must use)</option>
+                                                    </select>
+                                                </div>
+                                                <div class="form-group checkbox-group">
+                                                    <label><input type="checkbox" id="parallel-tool-calls"><span>Parallel</span></label>
+                                                </div>
+                                            </div>
+                                            <div class="tool-presets-row">
+                                                <label>Presets:</label>
+                                                <div class="preset-buttons">
+                                                    <button class="btn btn-secondary btn-xs tool-preset-btn" data-preset="weather">🌤️ Weather</button>
+                                                    <button class="btn btn-secondary btn-xs tool-preset-btn" data-preset="calculator">🔢 Calc</button>
+                                                    <button class="btn btn-secondary btn-xs tool-preset-btn" data-preset="search">🔍 Search</button>
+                                                </div>
+                                            </div>
+                                            <div class="tools-list-container">
+                                                <div class="tools-list-header">
+                                                    <span>Tools (<span id="tools-count">0</span>)</span>
+                                                    <div class="tools-list-actions">
+                                                        <button id="add-tool-btn" class="btn btn-primary btn-xs">+ Add</button>
+                                                        <button id="clear-tools-btn" class="btn btn-secondary btn-xs">Clear</button>
+                                                    </div>
+                                                </div>
+                                                <div id="tools-list" class="tools-list">
+                                                    <div class="tools-empty-state"><span>No tools defined</span></div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- MCP Panel -->
+                                    <div class="inline-panel" id="panel-mcp" style="display: none;">
+                                        <div class="inline-panel-header">
+                                            <span class="inline-panel-title"><span class="panel-icon icon-mcp"></span> MCP Servers</span>
+                                            <span class="coming-soon-badge">Coming Soon</span>
+                                            <button class="inline-panel-close" data-panel="mcp">✕</button>
+                                        </div>
+                                        <div class="inline-panel-content">
+                                            <div class="mcp-placeholder">
                                                 <p>MCP integration is under development.</p>
-                                                <p class="placeholder-subtext">This will allow vLLM Playground to connect to MCP servers and use their tools during chat.</p>
+                                                <a href="https://modelcontextprotocol.io/" target="_blank">Learn more about MCP</a>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- RAG Panel -->
+                                    <div class="inline-panel" id="panel-rag" style="display: none;">
+                                        <div class="inline-panel-header">
+                                            <span class="inline-panel-title"><span class="panel-icon icon-rag"></span> RAG</span>
+                                            <span class="coming-soon-badge">Coming Soon</span>
+                                            <button class="inline-panel-close" data-panel="rag">✕</button>
+                                        </div>
+                                        <div class="inline-panel-content">
+                                            <div class="mcp-placeholder">
+                                                <p>Retrieval-Augmented Generation is under development.</p>
+                                                <p>Upload documents and enhance responses with relevant context.</p>
                                             </div>
                                         </div>
                                     </div>
                                 </div>
                                 
-                                <div class="input-group">
-                                    <div class="input-with-templates">
-                                        <textarea id="chat-input" class="chat-input" placeholder="Type your message here..." rows="1"></textarea>
+                                <!-- Icon Toolbar -->
+                                <div class="chat-toolbar">
+                                    <div class="toolbar-icons">
+                                        <button class="toolbar-icon-btn" id="toolbar-settings" data-panel="settings">
+                                            <span class="toolbar-icon icon-settings"></span>
+                                            <span class="toolbar-tooltip">Chat Settings</span>
+                                        </button>
+                                        <button class="toolbar-icon-btn" id="toolbar-prompt" data-panel="prompt">
+                                            <span class="toolbar-icon icon-prompt"></span>
+                                            <span class="toolbar-tooltip">System Prompt</span>
+                                        </button>
+                                        <button class="toolbar-icon-btn" id="toolbar-structured" data-panel="structured">
+                                            <span class="toolbar-icon icon-structured"></span>
+                                            <span class="toolbar-tooltip">Structured Outputs</span>
+                                        </button>
+                                        <button class="toolbar-icon-btn" id="toolbar-tools" data-panel="tools">
+                                            <span class="toolbar-icon icon-tools"></span>
+                                            <span class="toolbar-tooltip">Tool Calling</span>
+                                        </button>
+                                        <button class="toolbar-icon-btn" id="toolbar-mcp" data-panel="mcp">
+                                            <span class="toolbar-icon icon-mcp"></span>
+                                            <span class="toolbar-tooltip">MCP Servers</span>
+                                        </button>
+                                        <button class="toolbar-icon-btn" id="toolbar-rag" data-panel="rag">
+                                            <span class="toolbar-icon icon-rag"></span>
+                                            <span class="toolbar-tooltip">RAG</span>
+                                        </button>
+                                    </div>
+                                    <div class="toolbar-right">
                                         <select id="message-templates" class="message-templates">
                                             <option value="">Quick messages...</option>
                                             <option value="Hello!">Hello!</option>
@@ -578,8 +595,78 @@
                                             <option value="Tell me more about this.">Tell me more about this.</option>
                                         </select>
                                     </div>
-                                    <button id="send-btn" class="btn btn-primary" disabled>Send</button>
                                 </div>
+                                
+                                <!-- Tool Editor Modal -->
+                                <div id="tool-editor-modal" class="tool-editor-modal" style="display: none;">
+                                    <div class="tool-editor-content">
+                                        <div class="tool-editor-header">
+                                            <h4 id="tool-editor-title">Add New Tool</h4>
+                                            <button id="tool-editor-close" class="modal-close-btn" title="Close">✕</button>
+                                        </div>
+                                        <div class="tool-editor-body">
+                                            <div class="form-group">
+                                                <label for="tool-name"><span>Function Name</span><span class="required">*</span></label>
+                                                <input type="text" id="tool-name" class="form-control" placeholder="e.g., get_weather" spellcheck="false" autocomplete="off">
+                                                <small class="form-help">Use snake_case (letters, numbers, underscores)</small>
+                                            </div>
+                                            <div class="form-group">
+                                                <label for="tool-description"><span>Description</span><span class="required">*</span></label>
+                                                <textarea id="tool-description" class="form-control" rows="2" placeholder="What does this function do?"></textarea>
+                                            </div>
+                                            <div class="form-group">
+                                                <div class="params-header">
+                                                    <label><span>Parameters</span><span class="param-count" id="param-count">(0)</span></label>
+                                                    <button type="button" id="add-param-btn" class="btn btn-secondary btn-xs">+ Add</button>
+                                                </div>
+                                                <div id="params-list" class="params-list">
+                                                    <div class="params-empty">No parameters defined</div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="tool-editor-footer">
+                                            <button id="tool-editor-cancel" class="btn btn-secondary">Cancel</button>
+                                            <button id="tool-editor-save" class="btn btn-primary">Save</button>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Parameter Template -->
+                                <template id="param-template">
+                                    <div class="param-item" data-param-index="">
+                                        <div class="param-item-header">
+                                            <div class="param-required-toggle">
+                                                <input type="checkbox" class="param-required" title="Required">
+                                                <span class="required-label">Required</span>
+                                            </div>
+                                            <button type="button" class="param-delete-btn" title="Remove">✕</button>
+                                        </div>
+                                        <div class="param-row">
+                                            <div class="param-field param-name-field">
+                                                <label>Name</label>
+                                                <input type="text" class="form-control param-name" placeholder="param_name" spellcheck="false">
+                                            </div>
+                                            <div class="param-field param-type-field">
+                                                <label>Type</label>
+                                                <select class="form-control param-type">
+                                                    <option value="string">String</option>
+                                                    <option value="number">Number</option>
+                                                    <option value="integer">Integer</option>
+                                                    <option value="boolean">Boolean</option>
+                                                    <option value="array">Array</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                        <div class="param-field">
+                                            <label>Description</label>
+                                            <input type="text" class="form-control param-description" placeholder="What is this parameter for?">
+                                        </div>
+                                        <div class="param-field param-enum-field" style="display: none;">
+                                            <label>Allowed Values <span class="optional">(comma-separated)</span></label>
+                                            <input type="text" class="form-control param-enum" placeholder="e.g., celsius, fahrenheit">
+                                        </div>
+                                    </div>
+                                </template>
                             </div>
                         </div>
                         
@@ -664,7 +751,7 @@
                 <div class="guidellm-layout">
                     <div class="panel guidellm-panel">
                         <div class="panel-header">
-                            <h2>📊 Performance Benchmarking</h2>
+                            <h2><img src="/assets/guidellm-logo-light.png" alt="GuideLLM" class="panel-header-logo"> Performance Benchmarking</h2>
                             <div class="metrics-controls">
                                 <button id="run-benchmark-btn" class="btn btn-primary btn-sm" disabled>Run Benchmark</button>
                                 <button id="stop-benchmark-btn" class="btn btn-danger btn-sm" disabled style="display: none;">Stop</button>
