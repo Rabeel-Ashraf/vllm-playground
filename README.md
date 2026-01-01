@@ -679,7 +679,7 @@ Contributions welcome! Please feel free to submit issues and pull requests.
 
 **Container Images:**
 - **GPU Mode**: Official vLLM image (`vllm/vllm-openai:v0.11.0`)
-- **CPU Mode (Linux x86)**: Self-built optimized image (`quay.io/rh_ee_micyang/vllm-service:cpu`)
+- **CPU Mode (Linux x86)**: Self-built optimized image (`quay.io/rh_ee_micyang/vllm-cpu:v0.11.0`)
 - **CPU Mode (macOS ARM64)**: Self-built optimized image (`quay.io/rh_ee_micyang/vllm-mac:v0.11.0`) 🆕
 
 **Key Features:**
@@ -738,7 +738,7 @@ podman stop vllm-service && podman rm vllm-service
 
 # Pull latest vLLM images
 podman pull quay.io/rh_ee_micyang/vllm-mac:v0.11.0     # macOS ARM64
-podman pull quay.io/rh_ee_micyang/vllm-service:cpu    # Linux x86_64
+podman pull quay.io/rh_ee_micyang/vllm-cpu:v0.11.0    # Linux x86_64
 podman pull vllm/vllm-openai:v0.11.0                  # GPU (official)
 ```
 
@@ -852,14 +852,14 @@ oc apply -f openshift/manifests/04-webui-deployment.yaml
 
 **Note:** The deployment now uses publicly accessible container images:
 - **GPU**: `vllm/vllm-openai:v0.11.0` (official vLLM image)
-- **CPU**: `quay.io/rh_ee_micyang/vllm-service:cpu` (self-built, publicly accessible)
+- **CPU**: `quay.io/rh_ee_micyang/vllm-cpu:v0.11.0` (self-built, publicly accessible)
 
 No registry authentication or pull secrets are required. If you encounter image pull errors:
 
 ```bash
 # Verify image accessibility
 podman pull vllm/vllm-openai:v0.11.0  # For GPU
-podman pull quay.io/rh_ee_micyang/vllm-service:cpu  # For CPU
+podman pull quay.io/rh_ee_micyang/vllm-cpu:v0.11.0  # For CPU
 
 # Check pod events for details
 oc describe pod <pod-name> -n vllm-playground

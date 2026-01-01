@@ -76,7 +76,7 @@ The deployment supports both GPU and CPU modes. Choose one:
 # GPU mode (default) - uses vllm/vllm-openai:v0.11.0 (official)
 ./deploy.sh --gpu
 
-# CPU mode - uses quay.io/rh_ee_micyang/vllm-service:cpu (self-built, public)
+# CPU mode - uses quay.io/rh_ee_micyang/vllm-cpu:v0.11.0 (self-built, public)
 ./deploy.sh --cpu
 ```
 

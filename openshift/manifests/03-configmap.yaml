@@ -39,7 +39,7 @@ data:
   # CPU vLLM image - Self-built optimized image for CPU workloads
   # This image is built from Containerfile.cpu with CPU optimizations
   # Publicly accessible on Quay.io (no authentication needed)
-  VLLM_IMAGE: "quay.io/rh_ee_micyang/vllm-service:cpu"
+  VLLM_IMAGE: "quay.io/rh_ee_micyang/vllm-cpu:v0.11.0"
   
   # Web UI port
   WEBUI_PORT: "7860"

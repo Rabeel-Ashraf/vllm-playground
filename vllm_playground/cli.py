@@ -277,7 +277,7 @@ def cmd_pull(args):
     # Image definitions (must match container_manager.py)
     GPU_IMAGE = "docker.io/vllm/vllm-openai:v0.11.0"
     CPU_IMAGE_MACOS = "quay.io/rh_ee_micyang/vllm-mac:v0.11.0"
-    CPU_IMAGE_X86 = "quay.io/rh_ee_micyang/vllm-service:cpu"
+    CPU_IMAGE_X86 = "quay.io/rh_ee_micyang/vllm-cpu:v0.11.0"
     
     # Detect platform for CPU image
     import platform

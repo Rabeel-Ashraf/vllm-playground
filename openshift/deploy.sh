@@ -67,7 +67,7 @@ echo -e "${BLUE}Deployment Mode: ${DEPLOYMENT_MODE_UPPER}${NC}"
 if [ "$DEPLOYMENT_MODE" = "gpu" ]; then
     echo -e "${BLUE}vLLM Image: vllm/vllm-openai:v0.11.0 (official)${NC}"
 else
-    echo -e "${BLUE}vLLM Image: quay.io/rh_ee_micyang/vllm-service:cpu (self-built, public)${NC}"
+    echo -e "${BLUE}vLLM Image: quay.io/rh_ee_micyang/vllm-cpu:v0.11.0 (self-built, public)${NC}"
 fi
 if [ "$CREATE_PVC" = true ]; then
     echo -e "${BLUE}Persistent Cache: Enabled (PVC)${NC}"

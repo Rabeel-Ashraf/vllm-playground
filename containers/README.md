@@ -17,7 +17,7 @@ The Web UI runs in its own container and orchestrates vLLM service containers/po
 **For CPU Mode:**
 - **`Containerfile.cpu`** - Self-built optimized vLLM image for CPU workloads
   - Built from source with CPU optimizations
-  - Publicly hosted: `quay.io/rh_ee_micyang/vllm-service:cpu`
+  - Publicly hosted: `quay.io/rh_ee_micyang/vllm-cpu:v0.11.0`
   - Used for: Local macOS, CPU-only clusters
   - Includes: Python 3.12, vLLM with CPU support, startup scripts
 
@@ -51,7 +51,7 @@ The Web UI runs in its own container and orchestrates vLLM service containers/po
 - ✅ No authentication needed (public image)
 
 **CPU Deployments:**
-- ✅ Use self-built image: `quay.io/rh_ee_micyang/vllm-service:cpu`
+- ✅ Use self-built image: `quay.io/rh_ee_micyang/vllm-cpu:v0.11.0`
 - ✅ Built from `Containerfile.cpu` with CPU optimizations
 - ✅ Publicly accessible on Quay.io (no authentication needed)
 
@@ -119,7 +119,7 @@ See [../openshift/README.md](../openshift/README.md) and [../openshift/QUICK_STA
 |-------|----------|--------|----------------|
 | Web UI (OpenShift) | `quay.io/rh_ee_micyang/vllm-playground:0.2` | ✅ Yes | ❌ None |
 | vLLM GPU | `vllm/vllm-openai:v0.11.0` | ✅ Yes | ❌ None |
-| vLLM CPU | `quay.io/rh_ee_micyang/vllm-service:cpu` | ✅ Yes | ❌ None |
+| vLLM CPU | `quay.io/rh_ee_micyang/vllm-cpu:v0.11.0` | ✅ Yes | ❌ None |
 | vLLM macOS | `quay.io/rh_ee_micyang/vllm-mac:v0.11.0` | ✅ Yes | ❌ None |
 
 **Note:** All container images used in production are publicly accessible. No registry authentication or pull secrets are required.
@@ -134,7 +134,7 @@ All images are public - no authentication needed:
 podman pull vllm/vllm-openai:v0.11.0
 
 # Test CPU image pull
-podman pull quay.io/rh_ee_micyang/vllm-service:cpu
+podman pull quay.io/rh_ee_micyang/vllm-cpu:v0.11.0
 ```
 
 ### Build Fails with Space Issues

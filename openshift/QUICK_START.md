@@ -49,7 +49,7 @@ cd openshift/
 ./deploy.sh --cpu
 ```
 
-**vLLM Image Used:** `quay.io/rh_ee_micyang/vllm-service:cpu` (self-built, publicly accessible)
+**vLLM Image Used:** `quay.io/rh_ee_micyang/vllm-cpu:v0.11.0` (self-built, publicly accessible)
 
 ### Step 3: Access the Web UI
 

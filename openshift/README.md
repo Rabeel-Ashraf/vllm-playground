@@ -153,7 +153,7 @@ echo "https://$(oc get route vllm-playground -n vllm-playground -o jsonpath='{.s
 
 # 3. Deploy to OpenShift (CPU mode)
 cd openshift/
-./deploy.sh --cpu  # Uses quay.io/rh_ee_micyang/vllm-service:cpu (self-built, publicly accessible)
+./deploy.sh --cpu  # Uses quay.io/rh_ee_micyang/vllm-cpu:v0.11.0 (self-built, publicly accessible)
 
 # 4. Get Web UI URL
 echo "https://$(oc get route vllm-playground -n vllm-playground -o jsonpath='{.spec.host}')"
@@ -234,7 +234,7 @@ The deployment supports both **CPU-only** and **GPU-enabled** clusters:
 | Mode | Container Image | Use Case |
 |------|----------------|----------|
 | **GPU** (default) | `vllm/vllm-openai:v0.11.0` | Production workloads on GPU clusters (official vLLM image) |
-| **CPU** | `quay.io/rh_ee_micyang/vllm-service:cpu` | Development/testing on CPU-only clusters (self-built, optimized) |
+| **CPU** | `quay.io/rh_ee_micyang/vllm-cpu:v0.11.0` | Development/testing on CPU-only clusters (self-built, optimized) |
 
 **Container Strategy:**
 - ✅ **GPU**: Uses official community vLLM image (no authentication needed)

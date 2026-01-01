@@ -25,7 +25,7 @@ class VLLMContainerManager:
     # Override with VLLM_CONTAINER_IMAGE environment variable
     DEFAULT_IMAGE_GPU = "docker.io/vllm/vllm-openai:v0.11.0"  # Official vLLM GPU image (linux/amd64)
     DEFAULT_IMAGE_CPU_MACOS = "quay.io/rh_ee_micyang/vllm-mac:v0.11.0"  # CPU image for macOS (linux/arm64)
-    DEFAULT_IMAGE_CPU_X86 = "quay.io/rh_ee_micyang/vllm-service:cpu"  # CPU image for x86_64 Linux
+    DEFAULT_IMAGE_CPU_X86 = "quay.io/rh_ee_micyang/vllm-cpu:v0.11.0"  # CPU image for x86_64 Linux
     
     def __init__(self, container_runtime: str = "podman", use_sudo: bool = None):
         """
@@ -60,7 +60,7 @@ class VLLMContainerManager:
         1. VLLM_CONTAINER_IMAGE environment variable (if set)
         2. CPU image based on platform if use_cpu=True:
            - macOS (ARM64): quay.io/rh_ee_micyang/vllm-mac:v0.11.0
-           - Linux x86_64: quay.io/rh_ee_micyang/vllm-service:cpu
+           - Linux x86_64: quay.io/rh_ee_micyang/vllm-cpu:v0.11.0
         3. GPU image (default): docker.io/vllm/vllm-openai:v0.11.0
         
         Args:
