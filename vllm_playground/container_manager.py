@@ -33,24 +33,22 @@ class VLLMContainerManager:
         
         Args:
             container_runtime: Container runtime to use (podman or docker)
-            use_sudo: Run container commands with sudo (required for GPU access on some systems)
-                      If None, auto-detect based on VLLM_USE_SUDO env var
+            use_sudo: Run container commands with sudo.
+                      Default is True to ensure consistent container namespace for both CPU/GPU modes.
+                      Set VLLM_USE_SUDO=false to disable.
         """
         self.runtime = container_runtime
-        # Auto-detect from environment, or use provided value
+        # Default to using sudo for consistent container management
+        # This ensures CPU and GPU containers are in the same namespace,
+        # making it simple to switch between modes without stale containers
         if use_sudo is None:
-            self.use_sudo = os.environ.get("VLLM_USE_SUDO", "").lower() in ("true", "1", "yes")
+            sudo_env = os.environ.get("VLLM_USE_SUDO", "true").lower()
+            self.use_sudo = sudo_env not in ("false", "0", "no")
         else:
             self.use_sudo = use_sudo
         
-        # Auto-sudo for GPU mode: automatically use sudo for GPU containers
-        # This is the default behavior since rootless podman typically can't access GPU
-        # Set VLLM_AUTO_SUDO_GPU=false to disable
-        auto_sudo_env = os.environ.get("VLLM_AUTO_SUDO_GPU", "true").lower()
-        self.auto_sudo_gpu = auto_sudo_env not in ("false", "0", "no")
-        
-        # Track current mode for dynamic sudo decisions
-        self._current_gpu_mode = False
+        if self.use_sudo:
+            logger.info("Container manager initialized with sudo enabled (default for consistent CPU/GPU switching)")
     
     def get_default_image(self, use_cpu: bool = False) -> str:
         """
@@ -95,15 +93,10 @@ class VLLMContainerManager:
         """
         Determine if sudo should be used for container commands.
         
-        Returns True if:
-        - use_sudo is explicitly set (via --sudo flag or VLLM_USE_SUDO env)
-        - OR auto_sudo_gpu is enabled AND current mode is GPU
+        Returns True by default to ensure consistent container namespace
+        for both CPU and GPU modes. Set VLLM_USE_SUDO=false to disable.
         """
-        if self.use_sudo:
-            return True
-        if self.auto_sudo_gpu and self._current_gpu_mode:
-            return True
-        return False
+        return self.use_sudo
     
     def _run_podman_cmd(self, *args, capture_output=True, check=True) -> subprocess.CompletedProcess:
         """Run a podman command (with sudo if needed)"""
@@ -487,6 +480,9 @@ class VLLMContainerManager:
         - If config changed: remove old container and create new one
         - If no container exists: create new one
         
+        When switching between CPU and GPU modes, containers in BOTH contexts
+        (rootless and sudo) are stopped to avoid conflicts.
+        
         Args:
             vllm_config: vLLM configuration dictionary
             image: Container image to use (default: auto-selected based on CPU/GPU mode)
@@ -495,12 +491,9 @@ class VLLMContainerManager:
         Returns:
             Dictionary with container info (id, name, status, ready, etc.)
         """
-        # Track GPU mode for dynamic sudo decisions
         use_cpu = vllm_config.get('use_cpu', False)
-        self._current_gpu_mode = not use_cpu
-        
-        if self._current_gpu_mode and self.auto_sudo_gpu:
-            logger.info("GPU mode detected - using sudo for container commands")
+        mode_name = "CPU" if use_cpu else "GPU"
+        logger.info(f"Starting vLLM in {mode_name} mode")
         
         if image is None:
             # Auto-select appropriate image based on CPU/GPU mode
