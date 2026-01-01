@@ -1472,6 +1472,29 @@ class ToolChoice(BaseModel):
     function: Dict[str, str]  # {"name": "function_name"}
 
 
+class StructuredOutputs(BaseModel):
+    """Structured outputs configuration for guided decoding"""
+    choice: Optional[List[str]] = None  # List of allowed choices
+    regex: Optional[str] = None  # Regex pattern to match
+    grammar: Optional[str] = None  # EBNF grammar
+
+
+class JsonSchema(BaseModel):
+    """JSON Schema definition for response_format"""
+    name: str = "response"
+    schema_: Dict[str, Any] = Field(default_factory=dict, alias="schema")
+    strict: Optional[bool] = None
+    
+    class Config:
+        populate_by_name = True
+
+
+class ResponseFormat(BaseModel):
+    """Response format configuration (OpenAI-compatible)"""
+    type: str  # "json_schema" or "json_object"
+    json_schema: Optional[JsonSchema] = None
+
+
 class ChatRequestWithStopTokens(BaseModel):
     """Chat request structure with optional stop tokens override and tool calling support"""
     messages: List[ChatMessage]
@@ -1485,6 +1508,11 @@ class ChatRequestWithStopTokens(BaseModel):
     tools: Optional[List[Tool]] = None  # List of available tools/functions
     tool_choice: Optional[Union[str, ToolChoice]] = None  # "auto", "none", "required", or specific tool
     parallel_tool_calls: Optional[bool] = None  # Allow multiple tool calls in one response
+    
+    # Structured Outputs Support (vLLM guided decoding)
+    # See: https://docs.vllm.ai/en/latest/features/structured_outputs.html
+    structured_outputs: Optional[StructuredOutputs] = None  # For choice, regex, grammar
+    response_format: Optional[ResponseFormat] = None  # For JSON schema (OpenAI-compatible)
 
 
 @app.post("/api/chat")
@@ -1624,6 +1652,41 @@ async def chat(request: ChatRequestWithStopTokens):
         if request.parallel_tool_calls is not None:
             payload["parallel_tool_calls"] = request.parallel_tool_calls
             logger.info(f"🔧 Parallel tool calls: {request.parallel_tool_calls}")
+        
+        # Structured Outputs Support (vLLM guided decoding)
+        # See: https://docs.vllm.ai/en/latest/features/structured_outputs.html
+        if request.response_format:
+            # JSON Schema mode (OpenAI-compatible response_format)
+            if request.response_format.type == "json_schema" and request.response_format.json_schema:
+                payload["response_format"] = {
+                    "type": "json_schema",
+                    "json_schema": {
+                        "name": request.response_format.json_schema.name,
+                        "schema": request.response_format.json_schema.schema_
+                    }
+                }
+                if request.response_format.json_schema.strict is not None:
+                    payload["response_format"]["json_schema"]["strict"] = request.response_format.json_schema.strict
+                logger.info(f"📋 JSON Schema structured output enabled: {request.response_format.json_schema.name}")
+            elif request.response_format.type == "json_object":
+                payload["response_format"] = {"type": "json_object"}
+                logger.info(f"📋 JSON Object mode enabled")
+        elif request.structured_outputs:
+            # vLLM-specific guided decoding via extra_body
+            extra_body = {}
+            if request.structured_outputs.choice:
+                extra_body["guided_choice"] = request.structured_outputs.choice
+                logger.info(f"📋 Guided choice enabled: {request.structured_outputs.choice}")
+            elif request.structured_outputs.regex:
+                extra_body["guided_regex"] = request.structured_outputs.regex
+                logger.info(f"📋 Guided regex enabled: {request.structured_outputs.regex}")
+            elif request.structured_outputs.grammar:
+                extra_body["guided_grammar"] = request.structured_outputs.grammar
+                logger.info(f"📋 Guided grammar enabled")
+            
+            if extra_body:
+                # vLLM accepts these parameters directly in the request body
+                payload.update(extra_body)
         
         # Stop tokens handling:
         # By default, trust vLLM to use appropriate stop tokens from the model's tokenizer

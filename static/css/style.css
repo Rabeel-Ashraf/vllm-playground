@@ -5567,6 +5567,55 @@ a, button, input, select, textarea, .btn, .nav-item, .panel, .card, .form-contro
    Structured Outputs Styles
    ============================================ */
 
+.panel-warning-tip {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 10px 12px;
+    margin-bottom: 12px;
+    background: rgba(255, 193, 7, 0.1);
+    border: 1px solid rgba(255, 193, 7, 0.3);
+    border-radius: 8px;
+    font-size: 0.75rem;
+    line-height: 1.4;
+}
+
+.panel-warning-tip .warning-icon {
+    flex-shrink: 0;
+    font-size: 0.9rem;
+}
+
+.panel-warning-tip .warning-text {
+    color: var(--text-secondary);
+}
+
+.panel-warning-tip .warning-text strong {
+    color: #f0ad4e;
+}
+
+.panel-warning-tip .warning-text code {
+    background: rgba(255, 193, 7, 0.15);
+    padding: 1px 5px;
+    border-radius: 4px;
+    font-family: 'SF Mono', 'Monaco', 'Consolas', monospace;
+    font-size: 0.7rem;
+    color: #f0ad4e;
+}
+
+[data-theme="light"] .panel-warning-tip {
+    background: rgba(255, 193, 7, 0.08);
+    border-color: rgba(255, 152, 0, 0.4);
+}
+
+[data-theme="light"] .panel-warning-tip .warning-text strong {
+    color: #e65100;
+}
+
+[data-theme="light"] .panel-warning-tip .warning-text code {
+    background: rgba(255, 152, 0, 0.12);
+    color: #e65100;
+}
+
 .output-type-buttons {
     display: flex;
     gap: 4px;

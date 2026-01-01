@@ -439,6 +439,10 @@
                                                 <label><input type="checkbox" id="structured-enabled"><span>Enable Structured Outputs</span></label>
                                             </div>
                                             <div id="structured-options" style="display: none;">
+                                                <div class="panel-warning-tip">
+                                                    <span class="warning-icon">⚠️</span>
+                                                    <span class="warning-text"><strong>CPU Mode:</strong> Requires <code>dtype=float32</code>. Using bfloat16/float16 on CPU will cause errors.</span>
+                                                </div>
                                                 <div class="form-group">
                                                     <label>Output Type:</label>
                                                     <div class="output-type-buttons">
